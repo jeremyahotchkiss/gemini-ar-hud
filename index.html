@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini AR HUD - Meta Quest 3S</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: 'Courier New', Courier, monospace;
+      background-color: #000;
+      color: #00f3ff;
+    }
+    #ui-container {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(0, 10, 20, 0.85);
+      border: 1px solid #00f3ff;
+      border-radius: 8px;
+      padding: 12px;
+      box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    }
+    input[type="password"] {
+      background: #05131e;
+      border: 1px solid #00f3ff;
+      color: #00f3ff;
+      padding: 6px;
+      border-radius: 4px;
+      font-family: inherit;
+    }
+    #enter-ar {
+      display: none;
+      margin-top: 8px;
+      padding: 10px 20px;
+      background: #00f3ff;
+      color: #000;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 4px;
+      box-shadow: 0 0 10px #00f3ff;
+    }
+    #enter-ar:hover {
+      background: #ffb700;
+      box-shadow: 0 0 10px #ffb700;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="ui-container">
+    <div><strong>GEMINI AR HUD CONTROLLER</strong></div>
+    <label for="api-key">API Key: </label>
+    <input type="password" id="api-key" placeholder="Enter Gemini Key">
+    <br>
+    <button id="enter-ar">START AR HUD</button>
+  </div>
+
+  <script>
+    let scene, camera, renderer, orb, orbMaterial, hudCanvas, hudTexture;
+    let hands = [];
+    let beamLines = [];
+    let clock = new THREE.Clock();
+    let isPinching = false;
+
+    // --- GLSL Shaders for Gemini Orb ---
+    const orbVertexShader = `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      uniform float uTime;
+      
+      // Simplex noise generator
+      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
+      vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
+      float snoise(vec3 v) {
+        const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+        const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+        vec3 i  = floor(v + dot(v, C.yyy));
+        vec3 x0 = v - i + dot(i, C.xxx);
+        vec3 g = step(x0.yzx, x0.xyz);
+        vec3 l = 1.0 - g;
+        vec3 i1 = min(g.xyz, l.zxy);
+        vec3 i2 = max(g.xyz, l.zxy);
+        vec3 x1 = x0 - i1 + C.xxx;
+        vec3 x2 = x0 - i2 + C.yyy;
+        vec3 x3 = x0 - D.yyy;
+        i = mod289(i);
+        vec4 p = permute(permute(permute(
+                   i.z + vec4(0.0, i1.z, i2.z, 1.0))
+                 + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+                 + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+        float n_ = 0.142857142857;
+        vec3 ns = n_ * D.wyz - D.xzx;
+        vec4 j = p - 49.0 * floor(p * ns.z);
+        vec4 x_ = floor(j * ns.z);
+        vec4 y_ = floor(j - 7.0 * x_);
+        vec4 x = x_ *ns.x + ns.yyyy;
+        vec4 y = y_ *ns.x + ns.yyyy;
+        vec4 h = 1.0 - abs(x) - abs(y);
+        vec4 b0 = vec4(x.xy, y.xy);
+        vec4 b1 = vec4(x.zw, y.zw);
+        vec4 s0 = floor(b0)*2.0 + 1.0;
+        vec4 s1 = floor(b1)*2.0 + 1.0;
+        vec4 sh = -step(h, vec4(0.0));
+        vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+        vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+        vec3 p0 = vec3(a0.xy, h.x);
+        vec3 p1 = vec3(a0.zw, h.y);
+        vec3 p2 = vec3(a1.xy, h.z);
+        vec3 p3 = vec3(a1.zw, h.w);
+        vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+        p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
+        vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
+        m = m * m;
+        return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
+      }
+
+      void main() {
+        vNormal = normal;
+        vPosition = position;
+        float noise = snoise(position * 3.0 + vec3(uTime * 0.8));
+        vec3 newPosition = position + normal * (noise * 0.05);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
+      }
+    `;
+
+    const orbFragmentShader = `
+      varying vec3 vNormal;
+      varying vec3 vPosition;
+      uniform float uTime;
+      uniform float uPinch;
+
+      void main() {
+        vec3 normal = normalize(vNormal);
+        float intensity = pow(0.7 - dot(normal, vec3(0.0, 0.0, 1.0)), 2.0);
+        
+        vec3 baseCyan = vec3(0.0, 0.95, 1.0);
+        vec3 baseMagenta = vec3(1.0, 0.0, 0.8);
+        vec3 pinchColor = vec3(1.0, 0.6, 0.0);
+
+        vec3 dynamicColor = mix(baseCyan, baseMagenta, sin(uTime * 2.0) * 0.5 + 0.5);
+        vec3 finalColor = mix(dynamicColor, pinchColor, uPinch);
+
+        gl_FragColor = vec4(finalColor + vec3(intensity), 0.85);
+      }
+    `;
+
+    init();
+
+    function init() {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.xr.enabled = true;
+      document.body.appendChild(renderer.domElement);
+
+      // Check WebXR AR support
+      if ('xr' in navigator) {
+        navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
+          if (supported) {
+            document.getElementById('enter-ar').style.display = 'inline-block';
+            document.getElementById('enter-ar').addEventListener('click', startAR);
+          }
+        });
+      }
+
+      // --- Light Setup ---
+      const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
+      scene.add(light);
+
+      // --- 1. Sci-Fi HUD Canvas Overlay ---
+      createHUD();
+
+      // --- 2. Floating Gemini AI Orb ---
+      orbMaterial = new THREE.ShaderMaterial({
+        vertexShader: orbVertexShader,
+        fragmentShader: orbFragmentShader,
+        uniforms: {
+          uTime: { value: 0 },
+          uPinch: { value: 0 }
+        },
+        transparent: true
+      });
+      const orbGeometry = new THREE.IcosahedronGeometry(0.18, 32);
+      orb = new THREE.Mesh(orbGeometry, orbMaterial);
+      orb.position.set(0, 0, -1.5);
+      scene.add(orb);
+
+      // --- 3. Interactive Target Boxes ---
+      createTargetBox(-0.8, -0.2, -1.8, "TARGET ID: 01 - SOFA");
+      createTargetBox(0.8, 0.3, -2.0, "TARGET ID: 02 - DESK");
+      createTargetBox(0.0, -0.6, -1.2, "TARGET ID: 03 - FLOOR");
+
+      // --- Beam Lines Setup ---
+      for (let i = 0; i < 2; i++) {
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+        const lineMat = new THREE.LineBasicMaterial({ color: 0xffb700, linewidth: 3 });
+        const line = new THREE.Line(lineGeo, lineMat);
+        line.visible = false;
+        scene.add(line);
+        beamLines.push(line);
+      }
+    }
+
+    function createHUD() {
+      hudCanvas = document.createElement('canvas');
+      hudCanvas.width = 512;
+      hudCanvas.height = 256;
+      hudTexture = new THREE.CanvasTexture(hudCanvas);
+
+      const hudGeo = new THREE.PlaneGeometry(0.5, 0.25);
+      const hudMat = new THREE.MeshBasicMaterial({ map: hudTexture, transparent: true, opacity: 0.8 });
+      const hudMesh = new THREE.Mesh(hudGeo, hudMat);
+      
+      hudMesh.position.set(0, 0.25, -0.8);
+      camera.add(hudMesh);
+      scene.add(camera);
+    }
+
+    function updateHUDText(fps) {
+      const ctx = hudCanvas.getContext('2d');
+      ctx.clearRect(0, 0, 512, 256);
+
+      ctx.strokeStyle = '#00f3ff';
+      ctx.lineWidth = 4;
+      ctx.strokeRect(10, 10, 492, 236);
+
+      ctx.fillStyle = '#00f3ff';
+      ctx.font = '22px monospace';
+      ctx.fillText(`SYS.STATUS: NOMINAL`, 30, 50);
+      ctx.fillText(`HANDS: ACTIVE (21 PTS)`, 30, 90);
+      ctx.fillText(`FPS: ${fps}`, 30, 130);
+
+      ctx.fillStyle = '#ffb700';
+      ctx.fillText(`GEMINI LINK: ONLINE`, 30, 170);
+
+      hudTexture.needsUpdate = true;
+    }
+
+    function createTargetBox(x, y, z, labelText) {
+      const group = new THREE.Group();
+      group.position.set(x, y, z);
+
+      const boxGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+      const edges = new THREE.EdgesGeometry(boxGeo);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x00f3ff });
+      const boxLines = new THREE.LineSegments(edges, lineMat);
+      group.add(boxLines);
+
+      // Label Canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#00f3ff';
+      ctx.font = '16px monospace';
+      ctx.fillText(labelText, 10, 40);
+
+      const tex = new THREE.CanvasTexture(canvas);
+      const labelMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
+      const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.1), labelMat);
+      labelMesh.position.set(0, 0.22, 0);
+      group.add(labelMesh);
+
+      scene.add(group);
+    }
+
+    function startAR() {
+      navigator.xr.requestSession('immersive-ar', {
+        requiredFeatures: ['hit-test', 'hand-tracking'],
+        optionalFeatures: ['dom-overlay'],
+        domOverlay: { root: document.body }
+      }).then((session) => {
+        renderer.xr.setReferenceSpaceType('local');
+        renderer.xr.setSession(session);
+
+        document.getElementById('ui-container').style.display = 'none';
+
+        setupHands(session);
+        speak("Gemini HUD online. Scanning environment.");
+        renderer.setAnimationLoop(render);
+      });
+    }
+
+    function setupHands(session) {
+      for (let i = 0; i < 2; i++) {
+        const controller = renderer.xr.getHand(i);
+        scene.add(controller);
+
+        const handGroup = new THREE.Group();
+        const jointGeo = new THREE.SphereGeometry(0.006, 8, 8);
+        const jointMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true });
+
+        for (let j = 0; j < 25; j++) {
+          const jointMesh = new THREE.Mesh(jointGeo, jointMat);
+          handGroup.add(jointMesh);
+        }
+
+        controller.add(handGroup);
+        hands.push({ controller, jointGroup: handGroup });
+      }
+    }
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.1;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    let frameCount = 0;
+    let lastTime = performance.now();
+    let currentFps = "60";
+
+    function render(timestamp, frame) {
+      const elapsedTime = clock.getElapsedTime();
+
+      // Floating Orb animation
+      orb.position.y = Math.sin(elapsedTime * 1.5) * 0.08;
+      orbMaterial.uniforms.uTime.value = elapsedTime;
+
+      // Calculate FPS
+      frameCount++;
+      if (performance.now() - lastTime >= 1000) {
+        currentFps = frameCount.toString();
+        frameCount = 0;
+        lastTime = performance.now();
+        updateHUDText(currentFps);
+      }
+
+      // Hand pinch tracking and beam update
+      let globalPinch = false;
+
+      hands.forEach((hand, idx) => {
+        const joints = hand.controller.joints;
+        
+        // Update joint tracking representations
+        if (joints) {
+          let jIdx = 0;
+          for (const name in joints) {
+            if (hand.jointGroup.children[jIdx]) {
+              hand.jointGroup.children[jIdx].position.copy(joints[name].position);
+            }
+            jIdx++;
+          }
+
+          // Pinch Detection: Distance between Thumb Tip and Index Tip
+          const thumbTip = joints['thumb-tip'];
+          const indexTip = joints['index-finger-tip'];
+
+          if (thumbTip && indexTip) {
+            const dist = thumbTip.position.distanceTo(indexTip.position);
+
+            if (dist < 0.03) {
+              globalPinch = true;
+
+              // Render beam line from index tip to Gemini Orb
+              const points = [indexTip.position.clone(), orb.position.clone()];
+              beamLines[idx].geometry.setFromPoints(points);
+              beamLines[idx].visible = true;
+
+              if (!isPinching) {
+                speak("Target locked. Analyzing frame.");
+              }
+            } else {
+              beamLines[idx].visible = false;
+            }
+          }
+        }
+      });
+
+      isPinching = globalPinch;
+      orbMaterial.uniforms.uPinch.value = THREE.MathUtils.lerp(
+        orbMaterial.uniforms.uPinch.value,
+        isPinching ? 1.0 : 0.0,
+        0.1
+      );
+
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+  </html>
+  
