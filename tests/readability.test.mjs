@@ -82,6 +82,56 @@ test('WebXR world panel repeats the simulation legend and only reads gate state'
   assert.match(html, /SIMULATION \/ NOT A ROOM SCAN/);
 });
 
+function channel(value) {
+  const scaled = value / 255;
+  return scaled <= 0.04045 ? scaled / 12.92 : ((scaled + 0.055) / 1.055) ** 2.4;
+}
+function luminance(hex) {
+  const n = Number.parseInt(hex.slice(1), 16);
+  return 0.2126 * channel((n >> 16) & 255) + 0.7152 * channel((n >> 8) & 255) + 0.0722 * channel(n & 255);
+}
+function contrast(foreground, background) {
+  const lighter = Math.max(luminance(foreground), luminance(background));
+  const darker = Math.min(luminance(foreground), luminance(background));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+function rootHex(name) {
+  const match = css.match(new RegExp(`${name}:(#[0-9a-fA-F]{6})`));
+  assert.ok(match, name);
+  return match[1].toLowerCase();
+}
+function declaredColor(selector) {
+  const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const block = css.match(new RegExp(`${escaped}\\{([^}]*)\\}`));
+  assert.ok(block, selector);
+  const color = block[1].match(/(?:^|;)color:([^;]+)/);
+  assert.ok(color, `${selector} color`);
+  const value = color[1].trim();
+  const variable = value.match(/^var\((--[a-z0-9-]+)\)$/);
+  return variable ? rootHex(variable[1]) : value.toLowerCase();
+}
+
+test('caption text meets 4.5:1 on surface and background', () => {
+  const surface = rootHex('--surface');
+  const background = rootHex('--bg');
+  for (const selector of ['#command-input::placeholder', '.rail-cap', '.rail-footer small']) {
+    const foreground = declaredColor(selector);
+    assert.ok(contrast(foreground, surface) >= 4.5, `${selector} on surface`);
+    assert.ok(contrast(foreground, background) >= 4.5, `${selector} on background`);
+  }
+});
+
+test('settings close and switch hit targets are at least 48px', () => {
+  const close = css.match(/\.drawer-head button\{([^}]*)\}/);
+  assert.ok(close);
+  assert.ok(Number(close[1].match(/width:(\d+)px/)[1]) >= 48);
+  assert.ok(Number(close[1].match(/height:(\d+)px/)[1]) >= 48);
+  const hit = css.match(/\.switch\{([^}]*)\}/);
+  assert.ok(hit, '.switch hit target');
+  assert.ok(Number(hit[1].match(/(?:min-width|width):(\d+)px/)[1]) >= 48);
+  assert.ok(Number(hit[1].match(/(?:min-height|height):(\d+)px/)[1]) >= 48);
+});
+
 test('glow stays 0-100 and scene scale does not share calibrationScale', () => {
   assert.match(html, /id="glow"[^>]*min="0"[^>]*max="100"[^>]*value="72"/);
   assert.match(html, /id="scale"[^>]*min="20"[^>]*max="100"/);
