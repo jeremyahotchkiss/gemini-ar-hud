@@ -34,10 +34,10 @@ For Android/Quest over a network, host under **HTTPS** rather than a LAN HTTP ad
 ## Tests
 
 ```bash
-node --test tests/core.test.mjs
+node --test tests/*.test.mjs
 ```
 
-Core test suite has 10 assertions covering math, trilateration degeneracy, command parser and safety state transitions. Browser smoke testing is separately recommended.
+The Node suite covers math, the command parser, the simulated action gate, workspace import, operator-estimate calibration, and source checks for the HUD layout. It does not prove Quest, Android, Chromium visual, BLE, camera, or hardware behavior. `agreed` stays false.
 
 ## Source tree
 

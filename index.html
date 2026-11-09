@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#061019"><meta name="description" content="Aether HUD: modular spatial command console for Android and Quest WebXR">
+<meta name="theme-color" content="#07121f"><meta name="description" content="Aether HUD: modular spatial command console for Android and Quest WebXR">
 <link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icons/aether.svg" type="image/svg+xml">
 <title>AETHER HUD | Spatial Command System</title><link rel="stylesheet" href="./style.css">
 </head>
@@ -12,8 +12,9 @@
 <header class="topbar">
   <a class="brand" href="./" aria-label="Aether HUD home"><span class="brand-mark">◈</span><span><strong>AETHER<span class="brand-accent">/</span>HUD</strong><small>PERSONAL SPATIAL OPERATING SYSTEM</small></span></a>
   <div class="header-center"><span class="led led-ok"></span><span id="device-mode">LOCAL SIMULATION</span><span class="header-sep">/</span><span id="clock">--:--:--</span><span class="header-sep">/</span><span id="fps">60 FPS</span></div>
-  <div class="header-actions"><span id="mode-badge" class="mode-badge">DEMO DATA</span><span id="top-safety-state" class="top-safety-state" role="status" aria-live="polite">SAFE</span><button class="btn btn-danger" id="btn-estop-quick" aria-label="Emergency stop simulated action gate">■ STOP</button><button class="btn btn-subtle" id="btn-settings" title="Open visual controls" aria-label="Open settings">⚙ <span class="hide-mobile">CONFIG</span></button><button class="btn btn-primary" id="btn-xr">◇ <span>ENTER XR</span></button></div>
+  <div class="header-actions"><span id="mode-badge" class="mode-badge">DEMO DATA</span><span id="top-safety-state" class="top-safety-state" role="status" aria-live="polite">SAFE</span><button class="btn btn-danger" id="btn-estop-quick" aria-label="Emergency stop simulated action gate">ESTOP</button><button class="btn btn-subtle" id="btn-settings" title="Open visual controls" aria-label="Open settings">⚙ <span class="hide-mobile">CONFIG</span></button><button class="btn btn-primary" id="btn-xr">◇ <span>ENTER XR</span></button></div>
 </header>
+<p id="honesty-banner" class="honesty-banner" role="status">SIMULATION / NOT A ROOM SCAN</p>
 <div class="layout">
 <nav class="rail" aria-label="Main modules">
   <div class="rail-cap">MODULES <span>05</span></div>
@@ -27,7 +28,7 @@
 <main class="workspace">
   <div class="section-heading"><div><div class="eyebrow" id="section-kicker">01 / SPATIAL RADAR</div><h1 id="section-title">Environmental command center <span class="title-asterisk">✳</span></h1><p id="section-subtitle">A simulated 3D sensor scene. Select a beacon, measure virtual distances, or annotate the field.</p></div><span class="coordinate-label" id="coordinates">ORIGIN 0.00 / 0.00 / 0.00</span></div>
   <section class="scene-card" id="scene-card" aria-label="Spatial visualization">
-    <div class="scene-header"><span class="scene-pill"><span class="led led-ok"></span><span id="scene-mode-label">ACTIVE SPATIAL FIELD</span></span><span class="scene-live">● LIVE RENDER <span id="scene-frame">--</span></span></div>
+    <div class="scene-header"><span class="scene-pill"><span class="led led-ok"></span><span id="scene-mode-label">ACTIVE SPATIAL FIELD</span></span><span class="scene-live">● SIM RENDER <span id="scene-frame">--</span></span></div>
     <canvas id="radar-canvas" aria-label="Animated simulated spatial radar"></canvas>
     <video id="camera-video" playsinline autoplay muted hidden></video>
     <canvas id="overlay-canvas" aria-label="Drawing and measurement overlay"></canvas>
@@ -58,7 +59,7 @@
 </div>
 <div id="drawer-backdrop" hidden></div>
 <aside class="drawer" id="settings-drawer" aria-label="Settings" aria-hidden="true"><div class="drawer-head"><div><small>OPERATOR CONFIGURATION</small><h2>Visual systems</h2></div><button id="btn-close-settings" aria-label="Close settings">✕</button></div>
-  <p class="drawer-note">Live controls change the canvas and WebXR visualizer. Settings are saved on this device.</p>
+  <p class="drawer-note">These controls change the canvas and WebXR visualizer. Glow stays 0–100. Scene scale stays 20–100 and is separate from calibration. Settings are saved on this device.</p>
   <div class="control-field"><label for="opacity">HUD OPACITY <output id="opacity-output">82%</output></label><input id="opacity" type="range" min="20" max="100" value="82"></div>
   <div class="control-field"><label for="glow">LUMINANCE <output id="glow-output">72%</output></label><input id="glow" type="range" min="0" max="100" value="72"></div>
   <div class="control-field"><label for="scale">SCENE SCALE <output id="scale-output">65%</output></label><input id="scale" type="range" min="20" max="100" value="65"></div>
@@ -73,6 +74,9 @@
   <button class="btn btn-danger" id="btn-stop">■ EMERGENCY STOP (SIM)</button>
   <button class="btn btn-primary full" id="btn-confirm-sim" disabled>CONFIRM SIM RELAY PULSE</button>
   <button class="btn btn-subtle full" id="btn-reset-safety">RESET SIM STOP (OPERATOR)</button>
+  <label class="btn btn-subtle full" for="workspace-file">IMPORT WORKSPACE</label>
+  <input id="workspace-file" type="file" accept="application/json,.json" hidden>
+  <button type="button" class="btn btn-subtle full" id="btn-export-workspace">EXPORT WORKSPACE</button>
   <button class="btn btn-subtle full" id="btn-reset-settings">RESTORE DEFAULT SETTINGS</button>
 </aside>
 <div id="toast" role="status" aria-live="polite"></div>

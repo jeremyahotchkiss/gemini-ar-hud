@@ -8,7 +8,10 @@
 | 3D distance math | Core tested | Pythagorean Euclidean distance |
 | 2D trilateration | Core tested | Requires real distance inputs; not a BLE scanner |
 | Typed local commands | Core tested | Rule-based, not a cloud LLM |
-| Action-gate safety model | Core tested | Simulation; no actuator |
+| Action-gate safety model | Core tested | Simulation only. Default allowlist is beacon, relay-1, marker-pulse. No actuator is connected. |
+| Workspace v1 import | Core tested | Does not write localStorage visual settings. Import cannot arm. |
+| Operator calibration and sigma | Core tested | Separate from distance3, virtualPixelDistance, and the 20–100 scene-scale slider. |
+| Readability pass | Source tested | Palette, type size, and ESTOP sizing are checked as text. No browser screenshot in this run. |
 | Manual drawing | Implemented, browser QA pending | Canvas annotation |
 | Camera preview | Feature-gated; hardware unverified | Permission + browser API required |
 | Web Bluetooth | Feature-gated; hardware unverified | Selection only, no ranging |
