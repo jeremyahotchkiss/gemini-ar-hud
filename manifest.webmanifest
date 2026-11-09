@@ -1,0 +1,1 @@
+{"name":"Aether HUD: Spatial Command System","short_name":"Aether HUD","description":"Spatial command console demo and WebXR entry point","start_url":"./","scope":"./","display":"standalone","background_color":"#061019","theme_color":"#061019","icons":[{"src":"./icons/aether.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]}

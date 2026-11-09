@@ -1,395 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gemini AR HUD - Meta Quest 3S</title>
-  <style>
-    body {
-      margin: 0;
-      overflow: hidden;
-      font-family: 'Courier New', Courier, monospace;
-      background-color: #000;
-      color: #00f3ff;
-    }
-    #ui-container {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      z-index: 10;
-      background: rgba(0, 10, 20, 0.85);
-      border: 1px solid #00f3ff;
-      border-radius: 8px;
-      padding: 12px;
-      box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
-    }
-    input[type="password"] {
-      background: #05131e;
-      border: 1px solid #00f3ff;
-      color: #00f3ff;
-      padding: 6px;
-      border-radius: 4px;
-      font-family: inherit;
-    }
-    #enter-ar {
-      display: none;
-      margin-top: 8px;
-      padding: 10px 20px;
-      background: #00f3ff;
-      color: #000;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      border-radius: 4px;
-      box-shadow: 0 0 10px #00f3ff;
-    }
-    #enter-ar:hover {
-      background: #ffb700;
-      box-shadow: 0 0 10px #ffb700;
-    }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#061019"><meta name="description" content="Aether HUD: modular spatial command console for Android and Quest WebXR">
+<link rel="manifest" href="./manifest.webmanifest"><link rel="icon" href="./icons/aether.svg" type="image/svg+xml">
+<title>AETHER HUD | Spatial Command System</title><link rel="stylesheet" href="./style.css">
 </head>
 <body>
-
-  <div id="ui-container">
-    <div><strong>GEMINI AR HUD CONTROLLER</strong></div>
-    <label for="api-key">API Key: </label>
-    <input type="password" id="api-key" placeholder="Enter Gemini Key">
-    <br>
-    <button id="enter-ar">START AR HUD</button>
+<div class="scanlines" aria-hidden="true"></div>
+<div id="shell">
+<header class="topbar">
+  <a class="brand" href="./" aria-label="Aether HUD home"><span class="brand-mark">◈</span><span><strong>AETHER<span class="brand-accent">/</span>HUD</strong><small>PERSONAL SPATIAL OPERATING SYSTEM</small></span></a>
+  <div class="header-center"><span class="led led-ok"></span><span id="device-mode">LOCAL SIMULATION</span><span class="header-sep">/</span><span id="clock">--:--:--</span><span class="header-sep">/</span><span id="fps">60 FPS</span></div>
+  <div class="header-actions"><span id="mode-badge" class="mode-badge">DEMO DATA</span><button class="btn btn-subtle" id="btn-settings" title="Open visual controls" aria-label="Open settings">⚙ <span class="hide-mobile">CONFIG</span></button><button class="btn btn-primary" id="btn-xr">◇ <span>ENTER XR</span></button></div>
+</header>
+<div class="layout">
+<nav class="rail" aria-label="Main modules">
+  <div class="rail-cap">MODULES <span>05</span></div>
+  <button class="rail-item selected" data-panel="radar" aria-pressed="true"><span class="rail-icon">◎</span><span>RADAR</span><i>01</i></button>
+  <button class="rail-item" data-panel="vision" aria-pressed="false"><span class="rail-icon">▣</span><span>VISION</span><i>02</i></button>
+  <button class="rail-item" data-panel="devices" aria-pressed="false"><span class="rail-icon">⌁</span><span>DEVICES</span><i>03</i></button>
+  <button class="rail-item" data-panel="telemetry" aria-pressed="false"><span class="rail-icon">◫</span><span>TELEMETRY</span><i>04</i></button>
+  <button class="rail-item" data-panel="controls" aria-pressed="false"><span class="rail-icon">⊞</span><span>CONTROLS</span><i>05</i></button>
+  <div class="rail-footer"><span class="led led-ok"></span> LOCAL ENGINE<br><small>NO CLOUD REQUIRED</small></div>
+</nav>
+<main class="workspace">
+  <div class="section-heading"><div><div class="eyebrow" id="section-kicker">01 / SPATIAL RADAR</div><h1 id="section-title">Environmental command center <span class="title-asterisk">✳</span></h1><p id="section-subtitle">A simulated 3D sensor scene. Select a beacon, measure virtual distances, or annotate the field.</p></div><span class="coordinate-label" id="coordinates">ORIGIN 0.00 / 0.00 / 0.00</span></div>
+  <section class="scene-card" id="scene-card" aria-label="Spatial visualization">
+    <div class="scene-header"><span class="scene-pill"><span class="led led-ok"></span><span id="scene-mode-label">ACTIVE SPATIAL FIELD</span></span><span class="scene-live">● LIVE RENDER <span id="scene-frame">--</span></span></div>
+    <canvas id="radar-canvas" aria-label="Animated simulated spatial radar"></canvas>
+    <video id="camera-video" playsinline autoplay muted hidden></video>
+    <canvas id="overlay-canvas" aria-label="Drawing and measurement overlay"></canvas>
+    <div class="scene-orbit-text" aria-hidden="true">AETHER / CORE<br><small>SPATIAL MESH V2</small></div>
+    <div class="floating-side-label left-label">X −<br>−1.5<br>−1.0<br>−0.5<br>0.0</div><div class="floating-side-label right-label">Y +<br>+1.5<br>+1.0<br>+0.5<br>0.0</div>
+    <div class="scene-toolbar" role="toolbar" aria-label="Spatial tools">
+      <button id="tool-select" data-tool="select" class="tool-btn active" title="Select an object">⌖ <span>SELECT</span></button>
+      <button id="tool-measure" data-tool="measure" class="tool-btn" title="Measure on calibrated virtual canvas">⫿ <span>MEASURE</span></button>
+      <button id="tool-draw" data-tool="draw" class="tool-btn" title="Draw on-screen">✎ <span>DRAW</span></button>
+      <button id="btn-clear" class="tool-btn" title="Clear annotations">↺ <span>CLEAR</span></button>
+    </div>
+    <div class="scene-corner-stat"><small id="scene-stat-label">FIELD DISTANCE</small><strong id="scene-distance">--.-- m</strong><span id="scene-stat-sub">SELECT TWO POINTS TO MEASURE</span></div>
+  </section>
+  <div class="bottom-data-strip">
+    <div><small>SPATIAL ANCHORS</small><strong id="anchor-count">04 <span>/ simulated</span></strong></div>
+    <div><small>HEADING</small><strong id="heading-readout">--° <span>/ no sensor</span></strong></div>
+    <div><small>XR CAPABILITY</small><strong id="xr-support">DETECTING…</strong></div>
+    <div><small>INPUT</small><strong id="input-source">TOUCH / MOUSE</strong></div>
   </div>
-
-  <script>
-    let scene, camera, renderer, orb, orbMaterial, hudCanvas, hudTexture;
-    let hands = [];
-    let beamLines = [];
-    let clock = new THREE.Clock();
-    let isPinching = false;
-
-    // --- GLSL Shaders for Gemini Orb ---
-    const orbVertexShader = `
-      varying vec3 vNormal;
-      varying vec3 vPosition;
-      uniform float uTime;
-      
-      // Simplex noise generator
-      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-      vec4 mod289(vec4 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-      vec4 permute(vec4 x) { return mod289(((x*34.0)+1.0)*x); }
-      vec4 taylorInvSqrt(vec4 r) { return 1.79284291400159 - 0.85373472095314 * r; }
-      float snoise(vec3 v) {
-        const vec2 C = vec2(1.0/6.0, 1.0/3.0);
-        const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
-        vec3 i  = floor(v + dot(v, C.yyy));
-        vec3 x0 = v - i + dot(i, C.xxx);
-        vec3 g = step(x0.yzx, x0.xyz);
-        vec3 l = 1.0 - g;
-        vec3 i1 = min(g.xyz, l.zxy);
-        vec3 i2 = max(g.xyz, l.zxy);
-        vec3 x1 = x0 - i1 + C.xxx;
-        vec3 x2 = x0 - i2 + C.yyy;
-        vec3 x3 = x0 - D.yyy;
-        i = mod289(i);
-        vec4 p = permute(permute(permute(
-                   i.z + vec4(0.0, i1.z, i2.z, 1.0))
-                 + i.y + vec4(0.0, i1.y, i2.y, 1.0))
-                 + i.x + vec4(0.0, i1.x, i2.x, 1.0));
-        float n_ = 0.142857142857;
-        vec3 ns = n_ * D.wyz - D.xzx;
-        vec4 j = p - 49.0 * floor(p * ns.z);
-        vec4 x_ = floor(j * ns.z);
-        vec4 y_ = floor(j - 7.0 * x_);
-        vec4 x = x_ *ns.x + ns.yyyy;
-        vec4 y = y_ *ns.x + ns.yyyy;
-        vec4 h = 1.0 - abs(x) - abs(y);
-        vec4 b0 = vec4(x.xy, y.xy);
-        vec4 b1 = vec4(x.zw, y.zw);
-        vec4 s0 = floor(b0)*2.0 + 1.0;
-        vec4 s1 = floor(b1)*2.0 + 1.0;
-        vec4 sh = -step(h, vec4(0.0));
-        vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
-        vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
-        vec3 p0 = vec3(a0.xy, h.x);
-        vec3 p1 = vec3(a0.zw, h.y);
-        vec3 p2 = vec3(a1.xy, h.z);
-        vec3 p3 = vec3(a1.zw, h.w);
-        vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-        p0 *= norm.x; p1 *= norm.y; p2 *= norm.z; p3 *= norm.w;
-        vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-        m = m * m;
-        return 42.0 * dot(m*m, vec4(dot(p0,x0), dot(p1,x1), dot(p2,x2), dot(p3,x3)));
-      }
-
-      void main() {
-        vNormal = normal;
-        vPosition = position;
-        float noise = snoise(position * 3.0 + vec3(uTime * 0.8));
-        vec3 newPosition = position + normal * (noise * 0.05);
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition, 1.0);
-      }
-    `;
-
-    const orbFragmentShader = `
-      varying vec3 vNormal;
-      varying vec3 vPosition;
-      uniform float uTime;
-      uniform float uPinch;
-
-      void main() {
-        vec3 normal = normalize(vNormal);
-        float intensity = pow(0.7 - dot(normal, vec3(0.0, 0.0, 1.0)), 2.0);
-        
-        vec3 baseCyan = vec3(0.0, 0.95, 1.0);
-        vec3 baseMagenta = vec3(1.0, 0.0, 0.8);
-        vec3 pinchColor = vec3(1.0, 0.6, 0.0);
-
-        vec3 dynamicColor = mix(baseCyan, baseMagenta, sin(uTime * 2.0) * 0.5 + 0.5);
-        vec3 finalColor = mix(dynamicColor, pinchColor, uPinch);
-
-        gl_FragColor = vec4(finalColor + vec3(intensity), 0.85);
-      }
-    `;
-
-    init();
-
-    function init() {
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      renderer.xr.enabled = true;
-      document.body.appendChild(renderer.domElement);
-
-      // Check WebXR AR support
-      if ('xr' in navigator) {
-        navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-          if (supported) {
-            document.getElementById('enter-ar').style.display = 'inline-block';
-            document.getElementById('enter-ar').addEventListener('click', startAR);
-          }
-        });
-      }
-
-      // --- Light Setup ---
-      const light = new THREE.HemisphereLight(0xffffff, 0x444444, 1);
-      scene.add(light);
-
-      // --- 1. Sci-Fi HUD Canvas Overlay ---
-      createHUD();
-
-      // --- 2. Floating Gemini AI Orb ---
-      orbMaterial = new THREE.ShaderMaterial({
-        vertexShader: orbVertexShader,
-        fragmentShader: orbFragmentShader,
-        uniforms: {
-          uTime: { value: 0 },
-          uPinch: { value: 0 }
-        },
-        transparent: true
-      });
-      const orbGeometry = new THREE.IcosahedronGeometry(0.18, 32);
-      orb = new THREE.Mesh(orbGeometry, orbMaterial);
-      orb.position.set(0, 0, -1.5);
-      scene.add(orb);
-
-      // --- 3. Interactive Target Boxes ---
-      createTargetBox(-0.8, -0.2, -1.8, "TARGET ID: 01 - SOFA");
-      createTargetBox(0.8, 0.3, -2.0, "TARGET ID: 02 - DESK");
-      createTargetBox(0.0, -0.6, -1.2, "TARGET ID: 03 - FLOOR");
-
-      // --- Beam Lines Setup ---
-      for (let i = 0; i < 2; i++) {
-        const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
-        const lineMat = new THREE.LineBasicMaterial({ color: 0xffb700, linewidth: 3 });
-        const line = new THREE.Line(lineGeo, lineMat);
-        line.visible = false;
-        scene.add(line);
-        beamLines.push(line);
-      }
-    }
-
-    function createHUD() {
-      hudCanvas = document.createElement('canvas');
-      hudCanvas.width = 512;
-      hudCanvas.height = 256;
-      hudTexture = new THREE.CanvasTexture(hudCanvas);
-
-      const hudGeo = new THREE.PlaneGeometry(0.5, 0.25);
-      const hudMat = new THREE.MeshBasicMaterial({ map: hudTexture, transparent: true, opacity: 0.8 });
-      const hudMesh = new THREE.Mesh(hudGeo, hudMat);
-      
-      hudMesh.position.set(0, 0.25, -0.8);
-      camera.add(hudMesh);
-      scene.add(camera);
-    }
-
-    function updateHUDText(fps) {
-      const ctx = hudCanvas.getContext('2d');
-      ctx.clearRect(0, 0, 512, 256);
-
-      ctx.strokeStyle = '#00f3ff';
-      ctx.lineWidth = 4;
-      ctx.strokeRect(10, 10, 492, 236);
-
-      ctx.fillStyle = '#00f3ff';
-      ctx.font = '22px monospace';
-      ctx.fillText(`SYS.STATUS: NOMINAL`, 30, 50);
-      ctx.fillText(`HANDS: ACTIVE (21 PTS)`, 30, 90);
-      ctx.fillText(`FPS: ${fps}`, 30, 130);
-
-      ctx.fillStyle = '#ffb700';
-      ctx.fillText(`GEMINI LINK: ONLINE`, 30, 170);
-
-      hudTexture.needsUpdate = true;
-    }
-
-    function createTargetBox(x, y, z, labelText) {
-      const group = new THREE.Group();
-      group.position.set(x, y, z);
-
-      const boxGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
-      const edges = new THREE.EdgesGeometry(boxGeo);
-      const lineMat = new THREE.LineBasicMaterial({ color: 0x00f3ff });
-      const boxLines = new THREE.LineSegments(edges, lineMat);
-      group.add(boxLines);
-
-      // Label Canvas
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 64;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#00f3ff';
-      ctx.font = '16px monospace';
-      ctx.fillText(labelText, 10, 40);
-
-      const tex = new THREE.CanvasTexture(canvas);
-      const labelMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true });
-      const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.1), labelMat);
-      labelMesh.position.set(0, 0.22, 0);
-      group.add(labelMesh);
-
-      scene.add(group);
-    }
-
-    function startAR() {
-      navigator.xr.requestSession('immersive-ar', {
-        requiredFeatures: ['hit-test', 'hand-tracking'],
-        optionalFeatures: ['dom-overlay'],
-        domOverlay: { root: document.body }
-      }).then((session) => {
-        renderer.xr.setReferenceSpaceType('local');
-        renderer.xr.setSession(session);
-
-        document.getElementById('ui-container').style.display = 'none';
-
-        setupHands(session);
-        speak("Gemini HUD online. Scanning environment.");
-        renderer.setAnimationLoop(render);
-      });
-    }
-
-    function setupHands(session) {
-      for (let i = 0; i < 2; i++) {
-        const controller = renderer.xr.getHand(i);
-        scene.add(controller);
-
-        const handGroup = new THREE.Group();
-        const jointGeo = new THREE.SphereGeometry(0.006, 8, 8);
-        const jointMat = new THREE.MeshBasicMaterial({ color: 0x00f3ff, wireframe: true });
-
-        for (let j = 0; j < 25; j++) {
-          const jointMesh = new THREE.Mesh(jointGeo, jointMat);
-          handGroup.add(jointMesh);
-        }
-
-        controller.add(handGroup);
-        hands.push({ controller, jointGroup: handGroup });
-      }
-    }
-
-    function speak(text) {
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.1;
-        window.speechSynthesis.speak(utterance);
-      }
-    }
-
-    let frameCount = 0;
-    let lastTime = performance.now();
-    let currentFps = "60";
-
-    function render(timestamp, frame) {
-      const elapsedTime = clock.getElapsedTime();
-
-      // Floating Orb animation
-      orb.position.y = Math.sin(elapsedTime * 1.5) * 0.08;
-      orbMaterial.uniforms.uTime.value = elapsedTime;
-
-      // Calculate FPS
-      frameCount++;
-      if (performance.now() - lastTime >= 1000) {
-        currentFps = frameCount.toString();
-        frameCount = 0;
-        lastTime = performance.now();
-        updateHUDText(currentFps);
-      }
-
-      // Hand pinch tracking and beam update
-      let globalPinch = false;
-
-      hands.forEach((hand, idx) => {
-        const joints = hand.controller.joints;
-        
-        // Update joint tracking representations
-        if (joints) {
-          let jIdx = 0;
-          for (const name in joints) {
-            if (hand.jointGroup.children[jIdx]) {
-              hand.jointGroup.children[jIdx].position.copy(joints[name].position);
-            }
-            jIdx++;
-          }
-
-          // Pinch Detection: Distance between Thumb Tip and Index Tip
-          const thumbTip = joints['thumb-tip'];
-          const indexTip = joints['index-finger-tip'];
-
-          if (thumbTip && indexTip) {
-            const dist = thumbTip.position.distanceTo(indexTip.position);
-
-            if (dist < 0.03) {
-              globalPinch = true;
-
-              // Render beam line from index tip to Gemini Orb
-              const points = [indexTip.position.clone(), orb.position.clone()];
-              beamLines[idx].geometry.setFromPoints(points);
-              beamLines[idx].visible = true;
-
-              if (!isPinching) {
-                speak("Target locked. Analyzing frame.");
-              }
-            } else {
-              beamLines[idx].visible = false;
-            }
-          }
-        }
-      });
-
-      isPinching = globalPinch;
-      orbMaterial.uniforms.uPinch.value = THREE.MathUtils.lerp(
-        orbMaterial.uniforms.uPinch.value,
-        isPinching ? 1.0 : 0.0,
-        0.1
-      );
-
-      renderer.render(scene, camera);
-    }
-  </script>
-</body>
-  </html>
-  
+</main>
+<aside class="sidebar" aria-label="AI and scene information">
+  <section class="panel agent-panel"><div class="panel-label"><span>INTELLIGENCE CORE</span><span id="agent-indicator" class="online-label">● LOCAL READY</span></div><div class="orb-shell"><div class="orb-halo"></div><div class="orb inner-orb"><div class="orb-inner"></div></div><span class="orb-equator"></span></div><h2>AETHER <span class="lite">/ AGENT</span></h2><p id="agent-reply" class="agent-reply" aria-live="polite">Command parser online. Try “measure”, “grid off”, or “status”.</p><div class="agent-capabilities"><span>VOICE*</span><span>SPATIAL</span><span>SAFETY</span></div></section>
+  <section class="panel node-panel"><div class="panel-label"><span>TRACKED TARGETS</span><span>04 / SIM</span></div><div id="anchor-list"></div><div class="panel-footnote">DEMO coordinates · Not a physical room scan</div></section>
+  <section class="panel events-panel"><div class="panel-label"><span>EVENT STREAM</span><button id="btn-export" class="mini-link">EXPORT ↗</button></div><div id="event-list" role="log" aria-live="polite"><div class="event"><time>INIT</time><span>System booted in simulation mode.</span></div></div></section>
+</aside>
+</div>
+<footer class="command-dock"><button class="mic-btn" id="btn-mic" title="Use speech recognition when supported" aria-label="Start voice command">◉</button><form id="command-form"><label class="sr-only" for="command-input">Enter an assistant command</label><input id="command-input" autocomplete="off" placeholder="Ask Aether to measure, scan, draw, or configure…" spellcheck="false"><button type="submit" id="btn-send">EXECUTE ↗</button></form><button id="btn-speech" class="dock-extra" aria-pressed="false" title="Toggle spoken responses">🔈</button><div class="dock-hint">LOCAL PARSER <span class="led led-ok"></span></div></footer>
+</div>
+<div id="drawer-backdrop" hidden></div>
+<aside class="drawer" id="settings-drawer" aria-label="Settings" aria-hidden="true"><div class="drawer-head"><div><small>OPERATOR CONFIGURATION</small><h2>Visual systems</h2></div><button id="btn-close-settings" aria-label="Close settings">✕</button></div>
+  <p class="drawer-note">Live controls change the canvas and WebXR visualizer. Settings are saved on this device.</p>
+  <div class="control-field"><label for="opacity">HUD OPACITY <output id="opacity-output">82%</output></label><input id="opacity" type="range" min="20" max="100" value="82"></div>
+  <div class="control-field"><label for="glow">LUMINANCE <output id="glow-output">72%</output></label><input id="glow" type="range" min="0" max="100" value="72"></div>
+  <div class="control-field"><label for="scale">SCENE SCALE <output id="scale-output">65%</output></label><input id="scale" type="range" min="20" max="100" value="65"></div>
+  <div class="control-field"><label for="range">VIRTUAL WIDTH <output id="range-output">5 m</output></label><input id="range" type="range" min="1" max="15" value="5"></div>
+  <div class="control-switch"><span>GEOMETRY GRID<small>Simulated room grid</small></span><label class="switch"><input id="toggle-grid" type="checkbox" checked><span></span></label></div>
+  <div class="control-switch"><span>PARTICLE FIELD<small>Animated visual effect</small></span><label class="switch"><input id="toggle-particles" type="checkbox" checked><span></span></label></div>
+  <div class="control-switch"><span>TARGET LABELS<small>Overlay known demonstration objects</small></span><label class="switch"><input id="toggle-labels" type="checkbox" checked><span></span></label></div>
+  <div class="control-switch"><span>AUDIO FX<small>User-gesture-initiated synthesis</small></span><label class="switch"><input id="toggle-audio" type="checkbox" checked><span></span></label></div>
+  <div class="drawer-subheading">SAFETY & DATA</div><div class="privacy-status">🛡 The app code does not upload voice audio, but browser speech recognition may use a remote service. Camera and Bluetooth require user action. No real actuators are connected.</div>
+  <button class="btn btn-danger" id="btn-stop">■ EMERGENCY STOP (SIM)</button><button class="btn btn-subtle full" id="btn-reset-settings">RESTORE DEFAULT SETTINGS</button>
+</aside>
+<div id="toast" role="status" aria-live="polite"></div>
+<script type="module" src="./app.mjs"></script>
+</body></html>

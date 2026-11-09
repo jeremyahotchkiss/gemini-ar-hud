@@ -1,0 +1,73 @@
+TAP version 13
+# Subtest: 3D Pythagorean measurement
+ok 1 - 3D Pythagorean measurement
+  ---
+  duration_ms: 1.26203
+  type: 'test'
+  ...
+# Subtest: 2D calibration
+ok 2 - 2D calibration
+  ---
+  duration_ms: 1.004459
+  type: 'test'
+  ...
+# Subtest: RSSI textbook reference distance
+ok 3 - RSSI textbook reference distance
+  ---
+  duration_ms: 0.256912
+  type: 'test'
+  ...
+# Subtest: trilateration 3 anchors exact
+ok 4 - trilateration 3 anchors exact
+  ---
+  duration_ms: 0.379915
+  type: 'test'
+  ...
+# Subtest: reject collinear anchors
+ok 5 - reject collinear anchors
+  ---
+  duration_ms: 1.579143
+  type: 'test'
+  ...
+# Subtest: all demo anchors have unique IDs
+ok 6 - all demo anchors have unique IDs
+  ---
+  duration_ms: 0.49083
+  type: 'test'
+  ...
+# Subtest: natural commands parse without AI hallucination
+ok 7 - natural commands parse without AI hallucination
+  ---
+  duration_ms: 5.37342
+  type: 'test'
+  ...
+# Subtest: gate blocks unarmed and unconfirmed actions
+ok 8 - gate blocks unarmed and unconfirmed actions
+  ---
+  duration_ms: 0.708045
+  type: 'test'
+  ...
+# Subtest: emergency stop latched
+ok 9 - emergency stop latched
+  ---
+  duration_ms: 0.705216
+  type: 'test'
+  ...
+# Subtest: value clamp
+ok 10 - value clamp
+  ---
+  duration_ms: 0.713185
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 196.607413
+
+---
+COMPLETED 2026-11-09: node --test tests/core.test.mjs
