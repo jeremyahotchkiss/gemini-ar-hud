@@ -5,6 +5,7 @@ export const ANCHORS = Object.freeze([
   { id: 'C3', name: 'Cargo Node', kind: 'ROUTE DEMO', position: [0.15, -0.35, -1.7], quality: 0.96 },
   { id: 'D4', name: 'Power Relay', kind: 'DEVICE SIM', position: [-0.9, -0.55, -4.0], quality: 0.91 }
 ]);
+export const SIM_ACTION_IDS = Object.freeze(['beacon', 'relay-1', 'marker-pulse']);
 export const clamp = (v, min, max) => Math.min(max, Math.max(min, Number(v)));
 export function distance3(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b) || a.length !== 3 || b.length !== 3 || ![...a,...b].every(Number.isFinite)) throw new TypeError('Three finite coordinates required');
@@ -13,6 +14,45 @@ export function distance3(a, b) {
 export function virtualPixelDistance(a, b, width, metersAcross) {
   if (![a?.x,a?.y,b?.x,b?.y,width,metersAcross].every(Number.isFinite) || width <= 0 || metersAcross <= 0) throw new RangeError('Invalid calibration');
   return Math.hypot(a.x-b.x, a.y-b.y) / width * metersAcross;
+}
+/** Return the operator-entered correction factor: known physical length / measured length. */
+export function calibrate(knownM, measuredM) {
+  if (![knownM, measuredM].every(Number.isFinite) || knownM <= 0 || measuredM <= 0) {
+    throw new RangeError('Calibration lengths must be finite and greater than zero');
+  }
+  const calibrationScale = knownM / measuredM;
+  if (!Number.isFinite(calibrationScale) || calibrationScale <= 0) throw new RangeError('Calibration scale must be finite and positive');
+  return calibrationScale;
+}
+/** Apply an operator-estimated calibration factor without changing raw distance functions. */
+export function calibratedMeters(rawMeters, calibrationScale = 1) {
+  if (![rawMeters, calibrationScale].every(Number.isFinite) || rawMeters < 0 || calibrationScale <= 0) {
+    throw new RangeError('Distance and calibration scale must be finite; distance non-negative and scale positive');
+  }
+  const result = rawMeters * calibrationScale;
+  if (!Number.isFinite(result)) throw new RangeError('Calibrated distance is not finite');
+  return result;
+}
+/** First-order estimate for two independent isotropic point errors; not a confidence interval. */
+export function sigma(pointSigmaM, calibrationScale = 1) {
+  if (![pointSigmaM, calibrationScale].every(Number.isFinite) || pointSigmaM < 0 || calibrationScale <= 0) {
+    throw new RangeError('Point sigma must be finite and non-negative; calibration scale must be finite and positive');
+  }
+  const result = pointSigmaM * Math.SQRT2 * calibrationScale;
+  if (!Number.isFinite(result)) throw new RangeError('Sigma estimate is not finite');
+  return result;
+}
+const UNIT_FACTORS = Object.freeze({ m: 1, cm: 100, mm: 1000, ft: 1 / 0.3048, in: 1 / 0.0254 });
+/** Convert a meter value to the requested display unit. */
+export function convertLength(meters, unit = 'm') {
+  if (!Number.isFinite(meters)) throw new RangeError('Length must be finite');
+  if (!Object.hasOwn(UNIT_FACTORS, unit)) throw new RangeError(`Unsupported length unit: ${unit}`);
+  return meters * UNIT_FACTORS[unit];
+}
+export function formatLength(meters, unit = 'm') {
+  const value = convertLength(meters, unit);
+  const digits = unit === 'mm' ? 0 : unit === 'cm' ? 1 : 2;
+  return `${value.toFixed(digits)} ${unit}`;
 }
 export function rssiDistance(rssi, referenceRssi = -59, pathLoss = 2) {
   if (![rssi,referenceRssi,pathLoss].every(Number.isFinite) || pathLoss <= 0) throw new RangeError('Invalid radio model');
@@ -55,34 +95,26 @@ export function command(text) {
   if(target) return {type:'focus',id:target.id};
   return {type:'unknown',query:t};
 }
-/**
- * Source boundary for local text commands. AI/model output is advisory-only and
- * never reaches command(). The speech path is restricted before dispatch.
- */
+/** Source boundary for local text commands. AI/model output is advisory-only and never reaches command(). */
 export function authorizedCommand(text, { source, voiceAuthority = false } = {}) {
   if (source === 'model') return { ok: false, command: null, reason: 'Model advisory is never executable.' };
   if (source !== 'operator' && source !== 'speech') return { ok: false, command: null, reason: 'Untrusted command source.' };
   const parsed = command(text);
   if (source === 'speech') {
     if (parsed.type === 'reset') return { ok: false, command: null, reason: 'Speech cannot reset the emergency stop.' };
-    if (['arm', 'disarm', 'gate'].includes(parsed.type) && voiceAuthority !== true) {
+    if (['arm', 'disarm', 'gate', 'action'].includes(parsed.type) && voiceAuthority !== true) {
       return { ok: false, command: null, reason: 'Voice authority is off. Use the operator controls.' };
     }
   }
   return { ok: true, command: parsed, reason: '' };
 }
-
-/**
- * SIMULATED relay interlock. This class does not send any physical I/O.
- * Separate, append-only-within-session safety audit; visible UI events can be
- * cleared without clearing the audit. Import never un-latches a stop.
- */
+/** SIMULATED relay interlock. No physical I/O is connected. */
 export class ActionGate {
   #audit = [];
   #seq = 0;
   #allowed;
-  constructor({ allowlist = ['relay-1'] } = {}) {
-    if (!Array.isArray(allowlist) || !allowlist.length || !allowlist.every(v => typeof v === 'string' && /^[a-z][a-z0-9-]*$/.test(v))) {
+  constructor({ allowlist = SIM_ACTION_IDS } = {}) {
+    if (!Array.isArray(allowlist) || !allowlist.length || !allowlist.every(v => SIM_ACTION_IDS.includes(v))) {
       throw new TypeError('Invalid simulated action allowlist');
     }
     this.#allowed = new Set(allowlist);
@@ -91,7 +123,7 @@ export class ActionGate {
     this.activations = 0;
   }
   #record(actor, event, result, detail = '') {
-    this.#audit.push(Object.freeze({ id: ++this.#seq, at: new Date().toISOString(), actor, event, result, detail }));
+    this.#audit.push(Object.freeze({ id: ++this.#seq, at: new Date().toISOString(), actor: actor || 'unknown', event, result, detail }));
   }
   getAudit() { return this.#audit.map(entry => ({ ...entry })); }
   recordDeniedInput(source, reason) { this.#record(source, 'input-deny', 'denied', String(reason)); }
@@ -102,7 +134,7 @@ export class ActionGate {
     if (source === 'speech' && event !== 'stop' && authority !== true) return 'Voice authority is off.';
     return '';
   }
-  arm(source = 'operator', voiceAuthority = false) {
+  arm(source, voiceAuthority = false) {
     const denied = this.#access(source, voiceAuthority, 'arm');
     if (denied) { this.#record(source, 'arm', 'denied', denied); return { ok: false, message: denied }; }
     if (this.stopped) { this.#record(source, 'arm', 'latched'); return { ok: false, message: 'Emergency stop latched. Reset first.' }; }
@@ -110,7 +142,7 @@ export class ActionGate {
     this.#record(source, 'arm', 'ok');
     return { ok: true, message: 'SIM gate armed. Confirmation required.' };
   }
-  activate(confirmed = false, id = 'relay-1', { source = 'operator', voiceAuthority = false, signal } = {}) {
+  activate(confirmed = false, id = 'relay-1', { source, voiceAuthority = false, signal } = {}) {
     const denied = this.#access(source, voiceAuthority, 'action');
     if (denied) { this.#record(source, 'action-deny', 'denied', denied); return { ok: false, message: denied }; }
     if (this.stopped) { this.#record(source, 'action-deny', 'latched'); return { ok: false, message: 'Blocked: emergency stop.' }; }
@@ -118,19 +150,20 @@ export class ActionGate {
     if (!this.#allowed.has(id)) { this.#record(source, 'action-deny', 'denied', 'unknown target'); return { ok: false, message: 'Blocked: action not on allowlist.' }; }
     if (signal?.aborted) { this.#record(source, 'action-deny', 'denied', 'aborted'); return { ok: false, message: 'Blocked: operation aborted.' }; }
     if (confirmed !== true) { this.#record(source, 'action-deny', 'denied', 'confirmation required'); return { ok: false, message: 'Blocked: explicit confirmation required.' }; }
+    if (source !== 'operator') { this.#record(source, 'action-deny', 'denied', 'operator confirmation required'); return { ok: false, message: 'Blocked: final confirmation must come from the operator.' }; }
     this.armed = false;
     this.activations += 1;
     this.#record(source, 'action-accept', 'ok', `SIM ${id}`);
-    return { ok: true, message: 'SIM relay pulse issued. Gate disarmed.' };
+    return { ok: true, message: `SIM ${id} pulse issued. Gate disarmed.` };
   }
-  disarm(source = 'operator', voiceAuthority = false) {
+  disarm(source, voiceAuthority = false) {
     const denied = this.#access(source, voiceAuthority, 'disarm');
     if (denied) { this.#record(source, 'disarm', 'denied', denied); return { ok: false, message: denied }; }
     this.armed = false;
     this.#record(source, 'disarm', 'ok');
     return { ok: true, message: 'Gate disarmed.' };
   }
-  stop(source = 'operator') {
+  stop(source) {
     const denied = this.#access(source, false, 'stop');
     if (denied) { this.#record(source, 'estop', 'denied', denied); return { ok: false, message: denied }; }
     this.stopped = true;
@@ -138,7 +171,7 @@ export class ActionGate {
     this.#record(source, 'estop', 'latched');
     return { ok: true, message: 'EMERGENCY STOP latched. All actions blocked.' };
   }
-  reset(source = 'operator') {
+  reset(source) {
     const denied = this.#access(source, false, 'reset');
     if (denied) { this.#record(source, 'reset-estop', 'denied', denied); return { ok: false, message: denied }; }
     this.stopped = false;
@@ -146,7 +179,7 @@ export class ActionGate {
     this.#record(source, 'reset-estop', 'ok');
     return { ok: true, message: 'Safety reset. Gate remains disarmed.' };
   }
-  /** Only preserve or strengthen a stop, never clear it by importing data. */
+  /** Import can preserve or strengthen a stop, but never clear it or arm the gate. */
   restore(snapshot) {
     if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) throw new TypeError('Invalid safety snapshot');
     this.stopped = this.stopped || snapshot.stopped === true || snapshot.estopLatched === true;
