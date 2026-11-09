@@ -121,6 +121,7 @@ function syncSafetyUI(){
 function run(text,source='operator'){
  const authorized=authorizedCommand(text,{source,voiceAuthority:state.voiceAuthority});
  if(!authorized.ok){
+   gate.recordDeniedInput(source,authorized.reason);
    const msg='COMMAND DENIED: '+authorized.reason;
    reply(msg);logEvent('DENIED',`${source}: ${msg}`);syncSafetyUI();return msg;
  }
@@ -147,7 +148,7 @@ function configure(){const open=$('settings-drawer').classList.contains('open');
 // Event wiring.
 document.querySelectorAll('.rail-item').forEach(b=>b.addEventListener('click',()=>showPanel(b.dataset.panel)));
 $('btn-settings').addEventListener('click',configure);$('btn-close-settings').addEventListener('click',configure);$('drawer-backdrop').addEventListener('click',configure);
-$('command-form').addEventListener('submit',e=>{e.preventDefault();const el=$('command-input');run(el.value);el.value='';});
+$('command-form').addEventListener('submit',e=>{e.preventDefault();const el=$('command-input');run(el.value,'operator');el.value='';});
 $('btn-xr').addEventListener('click',requestXR);$('btn-export').addEventListener('click',exportData);
 $('btn-clear').addEventListener('click',()=>{state.strokes=[];state.measurements=[];redrawOverlay();$('scene-distance').textContent='--.-- m';toast('Annotations cleared');logEvent('DRAW','Overlay cleared');});
 document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',()=>setTool(b.dataset.tool)));

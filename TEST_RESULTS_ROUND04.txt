@@ -2,159 +2,171 @@ TAP version 13
 # Subtest: 3D Pythagorean measurement
 ok 1 - 3D Pythagorean measurement
   ---
-  duration_ms: 2.533828
+  duration_ms: 2.261991
   type: 'test'
   ...
 # Subtest: 2D calibration
 ok 2 - 2D calibration
   ---
-  duration_ms: 0.250782
+  duration_ms: 0.30167
   type: 'test'
   ...
 # Subtest: RSSI textbook reference distance
 ok 3 - RSSI textbook reference distance
   ---
-  duration_ms: 0.124281
+  duration_ms: 0.447561
   type: 'test'
   ...
 # Subtest: trilateration 3 anchors exact
 ok 4 - trilateration 3 anchors exact
   ---
-  duration_ms: 0.254137
+  duration_ms: 0.28174
   type: 'test'
   ...
 # Subtest: reject collinear anchors
 ok 5 - reject collinear anchors
   ---
-  duration_ms: 0.502384
+  duration_ms: 0.571445
   type: 'test'
   ...
 # Subtest: all demo anchors have unique IDs
 ok 6 - all demo anchors have unique IDs
   ---
-  duration_ms: 0.127457
+  duration_ms: 0.127663
   type: 'test'
   ...
 # Subtest: natural commands parse without AI hallucination
 ok 7 - natural commands parse without AI hallucination
   ---
-  duration_ms: 1.895257
+  duration_ms: 2.50783
   type: 'test'
   ...
 # Subtest: gate blocks unarmed and unconfirmed actions
 ok 8 - gate blocks unarmed and unconfirmed actions
   ---
-  duration_ms: 0.783507
+  duration_ms: 0.987592
   type: 'test'
   ...
 # Subtest: emergency stop latched
 ok 9 - emergency stop latched
   ---
-  duration_ms: 0.481284
+  duration_ms: 0.439895
   type: 'test'
   ...
 # Subtest: value clamp
 ok 10 - value clamp
   ---
-  duration_ms: 0.335764
+  duration_ms: 0.384656
   type: 'test'
   ...
 # Subtest: model advisory is denied before invoking the command parser
 ok 11 - model advisory is denied before invoking the command parser
   ---
-  duration_ms: 2.719201
+  duration_ms: 2.065202
   type: 'test'
   ...
 # Subtest: unknown input sources cannot execute commands
 ok 12 - unknown input sources cannot execute commands
   ---
-  duration_ms: 0.694752
+  duration_ms: 0.281468
   type: 'test'
   ...
 # Subtest: speech emergency stop is permitted without voice authority
 ok 13 - speech emergency stop is permitted without voice authority
   ---
-  duration_ms: 1.037885
+  duration_ms: 1.130981
   type: 'test'
   ...
 # Subtest: speech reset is denied even with voice authority
 ok 14 - speech reset is denied even with voice authority
   ---
-  duration_ms: 0.597251
+  duration_ms: 0.340277
   type: 'test'
   ...
 # Subtest: speech arm, disarm, gate request blocked when authority is off
 ok 15 - speech arm, disarm, gate request blocked when authority is off
   ---
-  duration_ms: 0.907856
+  duration_ms: 0.528646
   type: 'test'
   ...
 # Subtest: voice authority explicitly enables critical SIM commands but still requires confirmation
 ok 16 - voice authority explicitly enables critical SIM commands but still requires confirmation
   ---
-  duration_ms: 0.611248
+  duration_ms: 0.259414
   type: 'test'
   ...
 # Subtest: hardware gate also rejects model and unknown source, regardless of armed state
 ok 17 - hardware gate also rejects model and unknown source, regardless of armed state
   ---
-  duration_ms: 0.995595
+  duration_ms: 0.589327
   type: 'test'
   ...
 # Subtest: simulated action allowlist rejects unknown targets
 ok 18 - simulated action allowlist rejects unknown targets
   ---
-  duration_ms: 1.997347
+  duration_ms: 0.878024
   type: 'test'
   ...
 # Subtest: latched emergency stop rejects any action and any arm
 ok 19 - latched emergency stop rejects any action and any arm
   ---
-  duration_ms: 0.93975
+  duration_ms: 0.365945
   type: 'test'
   ...
 # Subtest: imported stop wins and imported armed never enables a relay
 ok 20 - imported stop wins and imported armed never enables a relay
   ---
-  duration_ms: 1.238353
+  duration_ms: 0.503345
   type: 'test'
   ...
 # Subtest: restoring an unlatched snapshot still forces disarm
 ok 21 - restoring an unlatched snapshot still forces disarm
   ---
-  duration_ms: 0.571896
+  duration_ms: 0.181598
   type: 'test'
   ...
 # Subtest: aborted signal never counts as simulated action success
 ok 22 - aborted signal never counts as simulated action success
   ---
-  duration_ms: 0.394677
+  duration_ms: 0.136634
   type: 'test'
   ...
 # Subtest: the safety audit stays separate from the clear-log command
 ok 23 - the safety audit stays separate from the clear-log command
   ---
-  duration_ms: 0.473529
+  duration_ms: 0.143628
   type: 'test'
   ...
 # Subtest: reset by operator disarms and cannot activate without a new arm
 ok 24 - reset by operator disarms and cannot activate without a new arm
   ---
-  duration_ms: 0.506763
+  duration_ms: 0.209252
   type: 'test'
   ...
 # Subtest: invalid action allowlist fails closed
 ok 25 - invalid action allowlist fails closed
   ---
-  duration_ms: 1.034916
+  duration_ms: 0.362133
   type: 'test'
   ...
-1..25
-# tests 25
+# Subtest: missing provenance is never silently treated as an operator
+ok 26 - missing provenance is never silently treated as an operator
+  ---
+  duration_ms: 0.646581
+  type: 'test'
+  ...
+# Subtest: denied sensitive inputs survive clearing the visible log
+ok 27 - denied sensitive inputs survive clearing the visible log
+  ---
+  duration_ms: 0.175955
+  type: 'test'
+  ...
+1..27
+# tests 27
 # suites 0
-# pass 25
+# pass 27
 # fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 112.98514
+# duration_ms 109.979891

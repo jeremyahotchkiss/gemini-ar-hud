@@ -8,7 +8,7 @@ test('model advisory is denied before invoking the command parser', () => {
 });
 test('unknown input sources cannot execute commands', () => {
   assert.equal(authorizedCommand('arm gate', { source: 'untrusted' }).ok, false);
-  assert.equal(authorizedCommand('emergency stop', { source: undefined }).ok, true); // default operator
+  assert.equal(authorizedCommand('emergency stop', { source: undefined }).ok, false); // missing provenance fails closed
 });
 test('speech emergency stop is permitted without voice authority', () => {
   const result=authorizedCommand('emergency stop', { source: 'speech', voiceAuthority: false });
@@ -97,4 +97,18 @@ test('reset by operator disarms and cannot activate without a new arm',()=>{
 test('invalid action allowlist fails closed',()=>{
   assert.throws(()=>new ActionGate({allowlist:['relay-1',42]}),TypeError);
   assert.throws(()=>new ActionGate({allowlist:[]}),TypeError);
+});
+
+test('missing provenance is never silently treated as an operator',()=>{
+  assert.equal(authorizedCommand('arm gate').ok,false);
+  assert.equal(authorizedCommand('status',{source:'operator'}).ok,true);
+});
+test('denied sensitive inputs survive clearing the visible log',()=>{
+  const gate=new ActionGate();
+  const denied=authorizedCommand('reset safety',{source:'speech',voiceAuthority:true});
+  gate.recordDeniedInput('speech',denied.reason);
+  const visibleEvents=[{type:'DENIED'}];visibleEvents.length=0;
+  assert.equal(visibleEvents.length,0);
+  assert.equal(gate.getAudit().length,1);
+  assert.equal(gate.getAudit()[0].event,'input-deny');
 });

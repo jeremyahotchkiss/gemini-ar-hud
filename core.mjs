@@ -59,7 +59,7 @@ export function command(text) {
  * Source boundary for local text commands. AI/model output is advisory-only and
  * never reaches command(). The speech path is restricted before dispatch.
  */
-export function authorizedCommand(text, { source = 'operator', voiceAuthority = false } = {}) {
+export function authorizedCommand(text, { source, voiceAuthority = false } = {}) {
   if (source === 'model') return { ok: false, command: null, reason: 'Model advisory is never executable.' };
   if (source !== 'operator' && source !== 'speech') return { ok: false, command: null, reason: 'Untrusted command source.' };
   const parsed = command(text);
@@ -94,6 +94,7 @@ export class ActionGate {
     this.#audit.push(Object.freeze({ id: ++this.#seq, at: new Date().toISOString(), actor, event, result, detail }));
   }
   getAudit() { return this.#audit.map(entry => ({ ...entry })); }
+  recordDeniedInput(source, reason) { this.#record(source, 'input-deny', 'denied', String(reason)); }
   #access(source, authority = false, event = 'action') {
     if (source === 'model') return 'Model advisory cannot control simulated hardware.';
     if (source !== 'operator' && source !== 'speech') return 'Untrusted hardware command source.';

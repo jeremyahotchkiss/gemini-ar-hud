@@ -4,18 +4,18 @@
 
 ## Implemented in this patch
 
-- `authorizedCommand(text,{source,voiceAuthority})` denies all model/unknown sources **before** calling the parser, blocks speech reset unconditionally, and allows speech arm/disarm/request only when the session-only voice-authority switch is explicitly enabled. Spoken emergency stop is always allowed.
+- `authorizedCommand(text,{source,voiceAuthority})` requires explicit provenance and denies all model/unknown sources **before** calling the parser, blocks speech reset unconditionally, and allows speech arm/disarm/request only when the session-only voice-authority switch is explicitly enabled. Spoken emergency stop is always allowed.
 - The app routes speech as `source:'speech'`, typed and button actions as `source:'operator'`. The voice-authority switch defaults false on each load, is not persisted, and changing it disarms the gate.
 - `ActionGate` remains simulation-only and preserves its existing `arm()`, `activate(true)`, `stop()`, `reset()` assertions. Added independent source checks, action allowlist (`relay-1`), AbortSignal preflight, a separate safety audit, and stop-dominates-import logic.
 - A visible simulated action confirmation button provides a human-controlled second step. A one-tap SIM emergency-stop button and a compact armed/stop-state indicator remain visible in the top bar on Android-sized layouts. Action requests from the command field alone cannot activate the SIM relay.
-- `clear-log` clears only visible events, not the separate safety audit. JSON export now includes the safety audit, separately labeled.
+- `clear-log` clears only visible events, not the separate safety audit. Denied source-boundary commands also enter the audit. JSON export now includes the safety audit, separately labeled.
 - Updated service-worker cache version to avoid stale client files after deployment.
 
 ## Verified
 
 - Existing suite: **10/10 passed**, unchanged.
-- Additional safety regression suite: **15/15 passed**.
-- Total on local Node.js: **25/25 passed, 0 failures**.
+- Additional safety regression suite: **17/17 passed**.
+- Total on local Node.js: **27/27 passed, 0 failures**.
 - JavaScript syntax checks: `core.mjs`, `app.mjs`, `xr.mjs`, `sw.js`, and both tests passed.
 
 ## Not verified / not built
@@ -38,4 +38,4 @@ node --check sw.js
 
 ## Merge gate
 
-Status `agreed: false`. Grok must run the entire **25-test** suite on this exact commit and verify browser behavior on a reachable HTTPS origin. No source replacement or new rendering/math core is authorized by this patch.
+Status `agreed: false`. Grok must run the entire **27-test** suite on this exact commit and verify browser behavior on a reachable HTTPS origin. No source replacement or new rendering/math core is authorized by this patch.
