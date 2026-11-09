@@ -1,0 +1,160 @@
+TAP version 13
+# Subtest: 3D Pythagorean measurement
+ok 1 - 3D Pythagorean measurement
+  ---
+  duration_ms: 4.193857
+  type: 'test'
+  ...
+# Subtest: 2D calibration
+ok 2 - 2D calibration
+  ---
+  duration_ms: 0.553731
+  type: 'test'
+  ...
+# Subtest: RSSI textbook reference distance
+ok 3 - RSSI textbook reference distance
+  ---
+  duration_ms: 0.207496
+  type: 'test'
+  ...
+# Subtest: trilateration 3 anchors exact
+ok 4 - trilateration 3 anchors exact
+  ---
+  duration_ms: 0.392107
+  type: 'test'
+  ...
+# Subtest: reject collinear anchors
+ok 5 - reject collinear anchors
+  ---
+  duration_ms: 1.804967
+  type: 'test'
+  ...
+# Subtest: all demo anchors have unique IDs
+ok 6 - all demo anchors have unique IDs
+  ---
+  duration_ms: 0.351146
+  type: 'test'
+  ...
+# Subtest: natural commands parse without AI hallucination
+ok 7 - natural commands parse without AI hallucination
+  ---
+  duration_ms: 2.655803
+  type: 'test'
+  ...
+# Subtest: gate blocks unarmed and unconfirmed actions
+ok 8 - gate blocks unarmed and unconfirmed actions
+  ---
+  duration_ms: 1.068024
+  type: 'test'
+  ...
+# Subtest: emergency stop latched
+ok 9 - emergency stop latched
+  ---
+  duration_ms: 0.747649
+  type: 'test'
+  ...
+# Subtest: value clamp
+ok 10 - value clamp
+  ---
+  duration_ms: 0.553091
+  type: 'test'
+  ...
+# Subtest: model advisory is denied before invoking the command parser
+ok 11 - model advisory is denied before invoking the command parser
+  ---
+  duration_ms: 5.332811
+  type: 'test'
+  ...
+# Subtest: unknown input sources cannot execute commands
+ok 12 - unknown input sources cannot execute commands
+  ---
+  duration_ms: 0.712377
+  type: 'test'
+  ...
+# Subtest: speech emergency stop is permitted without voice authority
+ok 13 - speech emergency stop is permitted without voice authority
+  ---
+  duration_ms: 0.97688
+  type: 'test'
+  ...
+# Subtest: speech reset is denied even with voice authority
+ok 14 - speech reset is denied even with voice authority
+  ---
+  duration_ms: 0.427891
+  type: 'test'
+  ...
+# Subtest: speech arm, disarm, gate request blocked when authority is off
+ok 15 - speech arm, disarm, gate request blocked when authority is off
+  ---
+  duration_ms: 1.063149
+  type: 'test'
+  ...
+# Subtest: voice authority explicitly enables critical SIM commands but still requires confirmation
+ok 16 - voice authority explicitly enables critical SIM commands but still requires confirmation
+  ---
+  duration_ms: 0.882416
+  type: 'test'
+  ...
+# Subtest: hardware gate also rejects model and unknown source, regardless of armed state
+ok 17 - hardware gate also rejects model and unknown source, regardless of armed state
+  ---
+  duration_ms: 0.364767
+  type: 'test'
+  ...
+# Subtest: simulated action allowlist rejects unknown targets
+ok 18 - simulated action allowlist rejects unknown targets
+  ---
+  duration_ms: 0.992743
+  type: 'test'
+  ...
+# Subtest: latched emergency stop rejects any action and any arm
+ok 19 - latched emergency stop rejects any action and any arm
+  ---
+  duration_ms: 0.727074
+  type: 'test'
+  ...
+# Subtest: imported stop wins and imported armed never enables a relay
+ok 20 - imported stop wins and imported armed never enables a relay
+  ---
+  duration_ms: 0.999945
+  type: 'test'
+  ...
+# Subtest: restoring an unlatched snapshot still forces disarm
+ok 21 - restoring an unlatched snapshot still forces disarm
+  ---
+  duration_ms: 0.367942
+  type: 'test'
+  ...
+# Subtest: aborted signal never counts as simulated action success
+ok 22 - aborted signal never counts as simulated action success
+  ---
+  duration_ms: 0.253118
+  type: 'test'
+  ...
+# Subtest: the safety audit stays separate from the clear-log command
+ok 23 - the safety audit stays separate from the clear-log command
+  ---
+  duration_ms: 0.233989
+  type: 'test'
+  ...
+# Subtest: reset by operator disarms and cannot activate without a new arm
+ok 24 - reset by operator disarms and cannot activate without a new arm
+  ---
+  duration_ms: 0.343439
+  type: 'test'
+  ...
+# Subtest: invalid action allowlist fails closed
+ok 25 - invalid action allowlist fails closed
+  ---
+  duration_ms: 0.586948
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 149.214106

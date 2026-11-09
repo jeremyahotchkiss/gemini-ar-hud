@@ -1,11 +1,11 @@
-import { ANCHORS, ActionGate, clamp, command, distance3, virtualPixelDistance, formatMeters } from './core.mjs';
+import { ANCHORS, ActionGate, authorizedCommand, clamp, distance3, virtualPixelDistance, formatMeters } from './core.mjs';
 import { XRField } from './xr.mjs';
 
 const $ = id => document.getElementById(id);
 const storeKey = 'aether-hud-settings-v2';
 const defaults = Object.freeze({ opacity:82, glow:72, scale:65, range:5, grid:true, particles:true, labels:true, audio:true });
 function savedSettings(){try {return {...defaults,...JSON.parse(localStorage.getItem(storeKey)||'{}')};} catch {return {...defaults};}}
-const state={ settings:savedSettings(), panel:'radar', tool:'select', selected:'A1', measurements:[], strokes:[], activeStroke:null, events:[], speaking:false, listening:false, camera:null, ble:null, heading:null, xrMode:'unknown', scanPulse:0 };
+const state={ settings:savedSettings(), panel:'radar', tool:'select', selected:'A1', measurements:[], strokes:[], activeStroke:null, events:[], voiceAuthority:false, speaking:false, listening:false, camera:null, ble:null, heading:null, xrMode:'unknown', scanPulse:0 };
 const gate = new ActionGate();
 const radar=$('radar-canvas'),overlay=$('overlay-canvas'),scene=$('scene-card');
 const context=radar.getContext('2d',{alpha:true}), overlayContext=overlay.getContext('2d');
@@ -108,7 +108,20 @@ async function startOrientation(){if(!('DeviceOrientationEvent' in window)){repl
  try{if(typeof DeviceOrientationEvent.requestPermission==='function'){const p=await DeviceOrientationEvent.requestPermission();if(p!=='granted')throw Error('permission rejected');}
  window.addEventListener('deviceorientation',e=>{if(Number.isFinite(e.alpha)){state.heading=e.alpha;$('heading-readout').innerHTML=`${Math.round(e.alpha)}° <span>/ orientation</span>`;}},{passive:true});reply('Orientation listener enabled. Browser axes may differ from magnetic north.');}catch(e){reply('Orientation permission denied or unavailable.');}}
 async function requestXR(){audioClick(820);try{const mode=await xr.enter();state.xrMode=mode;reply(`Entered ${mode==='immersive-ar'?'AR passthrough':'VR'} environment. Press the headset system control to exit.`);logEvent('XR',mode+' session started');}catch(e){reply(`XR unavailable: ${e.message}`);toast('Open this HTTPS page in the Quest Browser and check XR support.');}}
-function run(text){const c=command(text);let msg='';audioClick();switch(c.type){
+function syncSafetyUI(){
+ const indicator=$('safety-state');
+ indicator.textContent=gate.stopped?'STOP LATCHED':gate.armed?'SIM ARMED':'SIM DISARMED';
+ indicator.classList.toggle('latched',gate.stopped);
+ $('btn-confirm-sim').disabled=gate.stopped||!gate.armed;
+ $('toggle-voice-authority').checked=state.voiceAuthority;
+}
+function run(text,source='operator'){
+ const authorized=authorizedCommand(text,{source,voiceAuthority:state.voiceAuthority});
+ if(!authorized.ok){
+   const msg='COMMAND DENIED: '+authorized.reason;
+   reply(msg);logEvent('DENIED',`${source}: ${msg}`);syncSafetyUI();return msg;
+ }
+ const c=authorized.command;let msg='';audioClick();switch(c.type){
  case 'help':msg='Try “grid off”, “measure”, “draw”, “scan”, “camera”, “status”, or “emergency stop”.';break;
  case 'toggle':setSettings(c.key,c.value);msg=`${c.key} ${c.value?'enabled':'disabled'}.`;break;
  case 'slider':setSettings(c.key,c.value);msg=`${c.key} set to ${state.settings[c.key]}${c.key==='range'?' meters':' percent'}.`;break;
@@ -118,14 +131,15 @@ function run(text){const c=command(text);let msg='';audioClick();switch(c.type){
  case 'panel':showPanel(c.value);msg=c.value+' module opened.';break;
  case 'focus':selectAnchor(ANCHORS.find(a=>a.id===c.id));return;
  case 'status':msg=`Local engine operational. ${ANCHORS.length} demo anchors. Browser WebXR: ${state.xrMode}. BLE: ${state.ble?'selected':'not connected'}. Action gate: ${gate.stopped?'STOPPED':gate.armed?'ARMED':'safe'}.`;break;
- case 'arm':msg=gate.arm().message;break;
- case 'disarm':msg=gate.disarm().message;break;
- case 'gate':msg=gate.activate(false).message+' Use the guarded controls to confirm a simulated pulse.';break;
- case 'stop':msg=gate.stop().message;toast('SIMULATION EMERGENCY STOP LATCHED');break;
- case 'reset':msg=gate.reset().message;break;
+ case 'arm':msg=gate.arm(source,state.voiceAuthority).message;break;
+ case 'disarm':msg=gate.disarm(source,state.voiceAuthority).message;break;
+ case 'gate':msg=gate.activate(false,'relay-1',{source,voiceAuthority:state.voiceAuthority}).message+' Use the SIM confirmation button as operator.';break;
+ case 'stop':msg=gate.stop(source).message;toast('SIMULATION EMERGENCY STOP LATCHED');break;
+ case 'reset':msg=gate.reset(source).message;break;
+ case 'clear-log':state.events=[];msg='Visible event stream cleared; safety audit retained.';break;
  case 'unknown':msg=`No executable local command recognized: “${text}”. This is a rule-based parser, not a remote AI model.`;break;
- }reply(msg);logEvent('CMD',msg);return msg;}
-function exportData(){const payload={version:'aether-hud-v2',createdAt:new Date().toISOString(),simulated:true,settings:state.settings,events:state.events,anchors:ANCHORS,annotations:state.strokes,measurements:state.measurements};const href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=href;a.download='aether-hud-session.json';a.click();setTimeout(()=>URL.revokeObjectURL(href),1000);toast('Session JSON exported');}
+ }reply(msg);logEvent('CMD',`${source}: ${msg}`);syncSafetyUI();return msg;}
+function exportData(){const payload={version:'aether-hud-v2',createdAt:new Date().toISOString(),simulated:true,settings:state.settings,events:state.events,safetyAudit:gate.getAudit(),estopLatched:gate.stopped,anchors:ANCHORS,annotations:state.strokes,measurements:state.measurements};const href=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=href;a.download='aether-hud-session.json';a.click();setTimeout(()=>URL.revokeObjectURL(href),1000);toast('Session JSON exported');}
 function configure(){const open=$('settings-drawer').classList.contains('open');$('settings-drawer').classList.toggle('open',!open);$('settings-drawer').setAttribute('aria-hidden',String(open));$('drawer-backdrop').hidden=open;}
 // Event wiring.
 document.querySelectorAll('.rail-item').forEach(b=>b.addEventListener('click',()=>showPanel(b.dataset.panel)));
@@ -137,9 +151,19 @@ document.querySelectorAll('[data-tool]').forEach(b=>b.addEventListener('click',(
 for(const k of ['opacity','glow','scale','range'])$(k).addEventListener('input',e=>setSettings(k,+e.target.value));
 for(const k of ['grid','particles','labels','audio'])$('toggle-'+k).addEventListener('change',e=>setSettings(k,e.target.checked));
 $('btn-reset-settings').addEventListener('click',()=>{state.settings={...defaults};applySettings();save();toast('Defaults restored');});
-$('btn-stop').addEventListener('click',()=>run('emergency stop'));
+$('btn-stop').addEventListener('click',()=>run('emergency stop','operator'));
+$('btn-reset-safety').addEventListener('click',()=>run('reset safety','operator'));
+$('btn-confirm-sim').addEventListener('click',()=>{
+ const result=gate.activate(true,'relay-1',{source:'operator'});
+ reply(result.message);logEvent(result.ok?'SIM ACTION':'DENIED',result.message);syncSafetyUI();
+});
+$('toggle-voice-authority').addEventListener('change',e=>{
+ state.voiceAuthority=e.target.checked===true;
+ gate.disarm('operator'); // Changing authority invalidates an existing arm.
+ syncSafetyUI();logEvent('SAFETY',state.voiceAuthority?'Voice critical commands enabled for THIS session (SIM only)':'Voice authority disabled');
+});
 $('btn-speech').addEventListener('click',()=>{state.speaking=!state.speaking;$('btn-speech').classList.toggle('enabled',state.speaking);$('btn-speech').setAttribute('aria-pressed',String(state.speaking));reply(state.speaking?'Spoken replies enabled.':'Spoken replies disabled.');});
-$('btn-mic').addEventListener('click',()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){reply('Speech recognition is unavailable. Use the command field. Some browser speech engines process audio remotely.');return;}if(state.listening)return;const recog=new SR();recog.lang='en-US';recog.interimResults=false;recog.continuous=false;recog.onresult=e=>{const phrase=e.results[0][0].transcript;run(phrase);};recog.onerror=e=>reply(`Voice input error: ${e.error}`);recog.onend=()=>{state.listening=false;$('btn-mic').classList.remove('listening')};state.listening=true;$('btn-mic').classList.add('listening');recog.start();});
+$('btn-mic').addEventListener('click',()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){reply('Speech recognition is unavailable. Use the command field. Some browser speech engines process audio remotely.');return;}if(state.listening)return;const recog=new SR();recog.lang='en-US';recog.interimResults=false;recog.continuous=false;recog.onresult=e=>{const phrase=e.results[0][0].transcript;run(phrase,'speech');};recog.onerror=e=>reply(`Voice input error: ${e.error}`);recog.onend=()=>{state.listening=false;$('btn-mic').classList.remove('listening')};state.listening=true;$('btn-mic').classList.add('listening');recog.start();});
 scene.addEventListener('pointerdown',e=>{if(state.tool!=='select'||e.target.closest('button'))return;const p=scenePoint(e);const closest=state.screenAnchors?.map(a=>({a,d:Math.hypot(a.screen[0]-p.x,a.screen[1]-p.y)})).sort((a,b)=>a.d-b.d)[0];if(closest&&closest.d<65)selectAnchor(closest.a);});
 overlay.addEventListener('pointerdown',e=>{const p=scenePoint(e);if(state.tool==='measure'){if(state.measurements.length===2)state.measurements=[];state.measurements.push(p);if(state.measurements.length===2){const dist=virtualPixelDistance(...state.measurements,overlay.width/dpr,state.settings.range);$('scene-distance').textContent=formatMeters(dist);$('scene-stat-sub').textContent=`VIRTUAL ${state.settings.range} m WIDTH CALIBRATION`;reply(`Simulated plane measurement: ${formatMeters(dist)} at ${state.settings.range} meters across viewport. Not a surveyed physical distance.`);logEvent('MEASURE',formatMeters(dist)+' virtual');}redrawOverlay();}
  else if(state.tool==='draw'){state.activeStroke=[p];overlay.setPointerCapture(e.pointerId);redrawOverlay();}});
@@ -149,7 +173,7 @@ overlay.addEventListener('pointerup',completeStroke);overlay.addEventListener('p
 window.addEventListener('resize',resize,{passive:true});
 window.addEventListener('keydown',e=>{if(e.key==='Escape'&&$('settings-drawer').classList.contains('open'))configure();if(e.key==='/'&&document.activeElement?.tagName!=='INPUT'){e.preventDefault();$('command-input').focus();}});
 async function detectCapabilities(){if(!navigator.xr?.isSessionSupported){$('xr-support').textContent='UNAVAILABLE';state.xrMode='unavailable';return;}const [ar,vr]=await Promise.allSettled([navigator.xr.isSessionSupported('immersive-ar'),navigator.xr.isSessionSupported('immersive-vr')]);const canAR=ar.status==='fulfilled'&&ar.value;const canVR=vr.status==='fulfilled'&&vr.value;state.xrMode=canAR?'AR READY':canVR?'VR READY':'UNSUPPORTED';$('xr-support').textContent=state.xrMode;}
-function init(){applySettings();resize();showPanel('radar');drawAnchorList();selectAnchor(ANCHORS[0]);$('scene-distance').textContent='0.00 m';$('scene-stat-sub').textContent='SIM REFERENCE: A1';$('clock').textContent=new Date().toLocaleTimeString();setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);detectCapabilities();if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});requestAnimationFrame(paint);logEvent('BOOT','Aether HUD v2 · no cloud services connected');}
+function init(){syncSafetyUI();applySettings();resize();showPanel('radar');drawAnchorList();selectAnchor(ANCHORS[0]);$('scene-distance').textContent='0.00 m';$('scene-stat-sub').textContent='SIM REFERENCE: A1';$('clock').textContent=new Date().toLocaleTimeString();setInterval(()=>$('clock').textContent=new Date().toLocaleTimeString(),1000);detectCapabilities();if('serviceWorker'in navigator&&location.protocol==='https:')navigator.serviceWorker.register('./sw.js').catch(()=>{});requestAnimationFrame(paint);logEvent('BOOT','Aether HUD v2 · no cloud services connected');}
 // Public read-only diagnostic API for smoke testing; no secrets or hardware actions.
-window.aetherDiagnostics=()=>({panel:state.panel,tool:state.tool,settings:{...state.settings},events:state.events.length,camera:!!state.camera,ble:!!state.ble,xr:state.xrMode,armed:gate.armed,stopped:gate.stopped});
+window.aetherDiagnostics=()=>({panel:state.panel,tool:state.tool,settings:{...state.settings},events:state.events.length,camera:!!state.camera,ble:!!state.ble,xr:state.xrMode,armed:gate.armed,stopped:gate.stopped,voiceAuthority:state.voiceAuthority,safetyAuditCount:gate.getAudit().length});
 init();

@@ -68,7 +68,12 @@
   <div class="control-switch"><span>TARGET LABELS<small>Overlay known demonstration objects</small></span><label class="switch"><input id="toggle-labels" type="checkbox" checked><span></span></label></div>
   <div class="control-switch"><span>AUDIO FX<small>User-gesture-initiated synthesis</small></span><label class="switch"><input id="toggle-audio" type="checkbox" checked><span></span></label></div>
   <div class="drawer-subheading">SAFETY & DATA</div><div class="privacy-status">🛡 The app code does not upload voice audio, but browser speech recognition may use a remote service. Camera and Bluetooth require user action. No real actuators are connected.</div>
-  <button class="btn btn-danger" id="btn-stop">■ EMERGENCY STOP (SIM)</button><button class="btn btn-subtle full" id="btn-reset-settings">RESTORE DEFAULT SETTINGS</button>
+  <div class="control-switch"><span>VOICE CRITICAL-COMMAND AUTHORITY<small>OFF by default, session-only. Allows spoken arm/disarm requests for SIM actions; spoken reset is always denied.</small></span><label class="switch"><input id="toggle-voice-authority" type="checkbox"><span></span></label></div>
+  <div class="safety-control-status" id="safety-state" role="status" aria-live="polite">SIM DISARMED</div>
+  <button class="btn btn-danger" id="btn-stop">■ EMERGENCY STOP (SIM)</button>
+  <button class="btn btn-primary full" id="btn-confirm-sim" disabled>CONFIRM SIM RELAY PULSE</button>
+  <button class="btn btn-subtle full" id="btn-reset-safety">RESET SIM STOP (OPERATOR)</button>
+  <button class="btn btn-subtle full" id="btn-reset-settings">RESTORE DEFAULT SETTINGS</button>
 </aside>
 <div id="toast" role="status" aria-live="polite"></div>
 <script type="module" src="./app.mjs"></script>

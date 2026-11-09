@@ -36,6 +36,7 @@ export function command(text) {
   const t=String(text||'').trim().toLowerCase();
   if (!t) return {type:'help'};
   if (/\b(emergency stop|e-stop|halt|abort)\b/.test(t)) return {type:'stop'};
+  if (t === 'clear-log') return {type:'clear-log'};
   if (/\b(reset safety|reset stop)\b/.test(t)) return {type:'reset'};
   if (/\b(arm action|arm device|arm gate)\b/.test(t)) return {type:'arm'};
   if (/\b(disarm|safe mode)\b/.test(t)) return {type:'disarm'};
@@ -54,13 +55,103 @@ export function command(text) {
   if(target) return {type:'focus',id:target.id};
   return {type:'unknown',query:t};
 }
-/** Two-step demonstration action gate: no physical output is ever connected by this class. */
+/**
+ * Source boundary for local text commands. AI/model output is advisory-only and
+ * never reaches command(). The speech path is restricted before dispatch.
+ */
+export function authorizedCommand(text, { source = 'operator', voiceAuthority = false } = {}) {
+  if (source === 'model') return { ok: false, command: null, reason: 'Model advisory is never executable.' };
+  if (source !== 'operator' && source !== 'speech') return { ok: false, command: null, reason: 'Untrusted command source.' };
+  const parsed = command(text);
+  if (source === 'speech') {
+    if (parsed.type === 'reset') return { ok: false, command: null, reason: 'Speech cannot reset the emergency stop.' };
+    if (['arm', 'disarm', 'gate'].includes(parsed.type) && voiceAuthority !== true) {
+      return { ok: false, command: null, reason: 'Voice authority is off. Use the operator controls.' };
+    }
+  }
+  return { ok: true, command: parsed, reason: '' };
+}
+
+/**
+ * SIMULATED relay interlock. This class does not send any physical I/O.
+ * Separate, append-only-within-session safety audit; visible UI events can be
+ * cleared without clearing the audit. Import never un-latches a stop.
+ */
 export class ActionGate {
-  constructor() {this.armed=false; this.stopped=false; this.activations=0;}
-  arm(){if(this.stopped)return {ok:false,message:'Emergency stop latched. Reset first.'};this.armed=true;return {ok:true,message:'SIM gate armed. Confirmation required.'};}
-  activate(confirmed=false){if(this.stopped) return {ok:false,message:'Blocked: emergency stop.'};if(!this.armed)return {ok:false,message:'Blocked: gate is disarmed.'};if(!confirmed)return {ok:false,message:'Blocked: explicit confirmation required.'};this.armed=false;this.activations++;return {ok:true,message:'SIM relay pulse issued. Gate disarmed.'};}
-  disarm(){this.armed=false;return {ok:true,message:'Gate disarmed.'};}
-  stop(){this.stopped=true;this.armed=false;return {ok:true,message:'EMERGENCY STOP latched. All actions blocked.'};}
-  reset(){this.stopped=false;this.armed=false;return {ok:true,message:'Safety reset. Gate remains disarmed.'};}
+  #audit = [];
+  #seq = 0;
+  #allowed;
+  constructor({ allowlist = ['relay-1'] } = {}) {
+    if (!Array.isArray(allowlist) || !allowlist.length || !allowlist.every(v => typeof v === 'string' && /^[a-z][a-z0-9-]*$/.test(v))) {
+      throw new TypeError('Invalid simulated action allowlist');
+    }
+    this.#allowed = new Set(allowlist);
+    this.armed = false;
+    this.stopped = false;
+    this.activations = 0;
+  }
+  #record(actor, event, result, detail = '') {
+    this.#audit.push(Object.freeze({ id: ++this.#seq, at: new Date().toISOString(), actor, event, result, detail }));
+  }
+  getAudit() { return this.#audit.map(entry => ({ ...entry })); }
+  #access(source, authority = false, event = 'action') {
+    if (source === 'model') return 'Model advisory cannot control simulated hardware.';
+    if (source !== 'operator' && source !== 'speech') return 'Untrusted hardware command source.';
+    if (source === 'speech' && event === 'reset') return 'Speech cannot reset the stop latch.';
+    if (source === 'speech' && event !== 'stop' && authority !== true) return 'Voice authority is off.';
+    return '';
+  }
+  arm(source = 'operator', voiceAuthority = false) {
+    const denied = this.#access(source, voiceAuthority, 'arm');
+    if (denied) { this.#record(source, 'arm', 'denied', denied); return { ok: false, message: denied }; }
+    if (this.stopped) { this.#record(source, 'arm', 'latched'); return { ok: false, message: 'Emergency stop latched. Reset first.' }; }
+    this.armed = true;
+    this.#record(source, 'arm', 'ok');
+    return { ok: true, message: 'SIM gate armed. Confirmation required.' };
+  }
+  activate(confirmed = false, id = 'relay-1', { source = 'operator', voiceAuthority = false, signal } = {}) {
+    const denied = this.#access(source, voiceAuthority, 'action');
+    if (denied) { this.#record(source, 'action-deny', 'denied', denied); return { ok: false, message: denied }; }
+    if (this.stopped) { this.#record(source, 'action-deny', 'latched'); return { ok: false, message: 'Blocked: emergency stop.' }; }
+    if (!this.armed) { this.#record(source, 'action-deny', 'denied', 'disarmed'); return { ok: false, message: 'Blocked: gate is disarmed.' }; }
+    if (!this.#allowed.has(id)) { this.#record(source, 'action-deny', 'denied', 'unknown target'); return { ok: false, message: 'Blocked: action not on allowlist.' }; }
+    if (signal?.aborted) { this.#record(source, 'action-deny', 'denied', 'aborted'); return { ok: false, message: 'Blocked: operation aborted.' }; }
+    if (confirmed !== true) { this.#record(source, 'action-deny', 'denied', 'confirmation required'); return { ok: false, message: 'Blocked: explicit confirmation required.' }; }
+    this.armed = false;
+    this.activations += 1;
+    this.#record(source, 'action-accept', 'ok', `SIM ${id}`);
+    return { ok: true, message: 'SIM relay pulse issued. Gate disarmed.' };
+  }
+  disarm(source = 'operator', voiceAuthority = false) {
+    const denied = this.#access(source, voiceAuthority, 'disarm');
+    if (denied) { this.#record(source, 'disarm', 'denied', denied); return { ok: false, message: denied }; }
+    this.armed = false;
+    this.#record(source, 'disarm', 'ok');
+    return { ok: true, message: 'Gate disarmed.' };
+  }
+  stop(source = 'operator') {
+    const denied = this.#access(source, false, 'stop');
+    if (denied) { this.#record(source, 'estop', 'denied', denied); return { ok: false, message: denied }; }
+    this.stopped = true;
+    this.armed = false;
+    this.#record(source, 'estop', 'latched');
+    return { ok: true, message: 'EMERGENCY STOP latched. All actions blocked.' };
+  }
+  reset(source = 'operator') {
+    const denied = this.#access(source, false, 'reset');
+    if (denied) { this.#record(source, 'reset-estop', 'denied', denied); return { ok: false, message: denied }; }
+    this.stopped = false;
+    this.armed = false;
+    this.#record(source, 'reset-estop', 'ok');
+    return { ok: true, message: 'Safety reset. Gate remains disarmed.' };
+  }
+  /** Only preserve or strengthen a stop, never clear it by importing data. */
+  restore(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object' || Array.isArray(snapshot)) throw new TypeError('Invalid safety snapshot');
+    this.stopped = this.stopped || snapshot.stopped === true || snapshot.estopLatched === true;
+    this.armed = false;
+    this.#record('system', 'restore', this.stopped ? 'latched' : 'ok', 'import cannot arm or reset');
+    return { stopped: this.stopped, armed: this.armed };
+  }
 }
 export function formatMeters(n){return n < 1 ? `${(n*100).toFixed(1)} cm` : `${n.toFixed(2)} m`;}

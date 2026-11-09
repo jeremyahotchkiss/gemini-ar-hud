@@ -48,3 +48,15 @@ Core test suite has 10 assertions covering math, trilateration degeneracy, comma
 - `sw.js`, `manifest.webmanifest`, `icons/`: PWA shell
 - `tests/core.test.mjs`: automated tests
 - `GROK_BUILD_HANDOFF.md`: cross-tool build and QA prompt
+
+## Round 04 safety update
+
+The source-aware command policy denies model text and untrusted command sources, restricts spoken high-authority commands, and makes the simulated action-confirmation step available through an explicit UI button. A session-only voice-authority toggle is OFF by default; spoken reset of the stop latch remains prohibited. The simulated gate audits all state transitions and rejects unlisted actions and pre-aborted signals. No physical outputs are attached.
+
+Run the original tests and the new regression suite together:
+
+```bash
+node --test tests/*.test.mjs
+```
+
+See `docs/ROUND04_SAFETY_PATCH.md` for evidence and current limitations. Browser/Quest hardware validation is still outstanding.
