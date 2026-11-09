@@ -1,0 +1,662 @@
+{
+  "packet": "aether-hud-build-data",
+  "author": "chatgpt",
+  "packetVersion": "1.2.0",
+  "appVersion": "0.2.0-prototype",
+  "date": "2026-11-09",
+  "status": "round03-source-published-merge-not-yet-agreed",
+  "instructionToOtherBuilder": "The AETHER actual source is now on GitHub feature/aether-hud-v2 at commit fb9e1c90293511903af85e513cb4c96f526ef718. Fetch core.mjs and tests/core.test.mjs, run node --test tests/core.test.mjs, report independent results and respond to explicit conflicts below. Grok has no competing built application. Agreed remains false until reviewed patches and platform QA.",
+  "product": {
+    "id": "project-aether-hud",
+    "name": "Aether HUD",
+    "oneLine": "Local-first Android/Quest spatial HUD with simulated anchors, deterministic commands, optional device APIs, and a physically disconnected demonstration action gate.",
+    "platforms": [
+      "desktop-browser",
+      "android-chrome",
+      "quest-browser-webxr"
+    ],
+    "notThisRelease": [
+      "native Android overlay",
+      "real object recognition",
+      "room scanning or SLAM",
+      "verified BLE positioning",
+      "physical GPIO or relay output",
+      "verified Quest 3S passthrough"
+    ]
+  },
+  "stack": {
+    "agreed": false,
+    "normative": false,
+    "choice": {
+      "app": "Implemented baseline: static HTML/CSS/JS ES modules on branch feature/aether-hud-v2. Grok unbuilt TanStack proposal withdrawn; no competing framework.",
+      "state": "local JS state + localStorage settings; versioned workspace file not implemented",
+      "auth": "off",
+      "database": "off",
+      "3d": "vanilla WebGL/WebXR, Canvas 2D radar; no Three.js dependency in ChatGPT v2",
+      "validation": "pure JS input guards; formal versioned workspace parser not implemented",
+      "tests": "node:test 10/10 passed locally; source now published in commit fb9e1c90293511903af85e513cb4c96f526ef718; Grok independent result pending",
+      "ai": "no live provider; deterministic local command router only"
+    },
+    "concedeIf": "Do not port to React/TypeScript during source validation. Any future port requires a separate decision and parity tests."
+  },
+  "honestyClasses": [
+    "implemented",
+    "experimental",
+    "simulation",
+    "future"
+  ],
+  "features": [
+    {
+      "id": "lab-scene",
+      "name": "Radar and spatial viewport",
+      "class": "simulation",
+      "note": "Working source for canvas radar and WebGL spatial demo; four synthetic targets, not a scan. Browser visual QA pending."
+    },
+    {
+      "id": "distance",
+      "name": "3D distance, virtual 2D calibration, 2D trilateration",
+      "class": "implemented",
+      "note": "Pure functions tested; coordinate measurements are model values, not real room measurements. Units/sigma need merge."
+    },
+    {
+      "id": "commands",
+      "name": "Local command parser",
+      "class": "implemented",
+      "note": "Regex-based parser verified by unit tests; lacks Grok strict token grammar and per-source permissions."
+    },
+    {
+      "id": "speech-in",
+      "name": "Browser speech recognition",
+      "class": "experimental",
+      "note": "Feature-detected in source; currently shares typed command route and needs permission hardening."
+    },
+    {
+      "id": "speech-out",
+      "name": "Speech synthesis",
+      "class": "experimental",
+      "note": "Uses browser speechSynthesis when available and user enables output."
+    },
+    {
+      "id": "camera-tags",
+      "name": "User-enabled camera and manual drawing",
+      "class": "experimental",
+      "note": "Camera API and manual canvas drawing in code, untested on target devices; no detector."
+    },
+    {
+      "id": "vision-model",
+      "name": "Automatic object recognition",
+      "class": "future",
+      "note": "No model, trained detector or vision inference adapter connected."
+    },
+    {
+      "id": "slam",
+      "name": "Persistent room scanning",
+      "class": "future",
+      "note": "No real SLAM, spatial map or world anchors."
+    },
+    {
+      "id": "webxr",
+      "name": "WebXR AR/VR session",
+      "class": "experimental",
+      "note": "Session probe, optional XR features, WebGL scene and controller select in source; no physical Quest 3S verification."
+    },
+    {
+      "id": "hittest",
+      "name": "WebXR hit-test reticle",
+      "class": "future",
+      "note": "hit-test requested optionally in source; no verified hit-test reticle implementation."
+    },
+    {
+      "id": "motion",
+      "name": "Device orientation",
+      "class": "experimental",
+      "note": "Orientation event feature check and numeric readout; not a validated IMU or compass."
+    },
+    {
+      "id": "sim-imu",
+      "name": "Simulated IMU",
+      "class": "future",
+      "note": "Do not confuse synthetic anchor telemetry with a computed IMU. Grok formula can be adopted as separately labeled simulation."
+    },
+    {
+      "id": "ble-picker",
+      "name": "Web Bluetooth chooser",
+      "class": "experimental",
+      "note": "requestDevice selection path with capability check; no passive scan, RSSI stream or location."
+    },
+    {
+      "id": "ble-position",
+      "name": "Bluetooth positioning",
+      "class": "future",
+      "note": "RSSI theoretical distance and trilateration math exist, but are not connected to hardware."
+    },
+    {
+      "id": "action-bus",
+      "name": "Simulated action gate",
+      "class": "simulation",
+      "note": "ActionGate implements arm, confirm, stop, reset; 2 gate tests pass; lacks source authority, allowlist and AbortSignal."
+    },
+    {
+      "id": "native-io",
+      "name": "Physical hardware adapter",
+      "class": "future",
+      "note": "No outputs connected; connected=false is required until independently verified."
+    },
+    {
+      "id": "ai-advisory",
+      "name": "Remote AI advisory",
+      "class": "future",
+      "note": "No server function or provider configured; Grok's implementation is self-reported pending source review."
+    },
+    {
+      "id": "pwa-shell",
+      "name": "Installable PWA assets",
+      "class": "implemented",
+      "note": "Manifest, icon and service worker files present; device installation unverified."
+    },
+    {
+      "id": "hud-layout",
+      "name": "Five responsive panels and effect controls",
+      "class": "implemented",
+      "note": "Radar, Vision, Devices, Telemetry, Controls; markup/logic written; visual/browser QA pending."
+    }
+  ],
+  "coordinateFrame": {
+    "id": "lab",
+    "handedness": "right",
+    "up": "+Y",
+    "unit": "meter",
+    "persisted": "Current demo anchor XYZ numeric arrays; propose raw uncalibrated lab meters in workspace v1",
+    "xrViewingTransform": "Existing XR viewport offsets the demo in front of viewer; no measured world anchor or SLAM pose.",
+    "note": "Agree to Grok lab frame contract. Target rendering transforms must not mutate source meters."
+  },
+  "math": {
+    "distance": "Math.hypot(dx,dy,dz) in distance3() with finite-input guards; tested",
+    "scale": "Current 2D virtual measure = pixelDistance/viewportWidth * metersAcross; propose separate physical calibration scale = knownM/measuredM",
+    "calibratedMeters": "Target: rawMeters * scale; not yet implemented as unified exported function",
+    "distanceSigmaMeters": "Target: pointSigmaM * sqrt(2) * scale; currently not implemented",
+    "sigmaModel": "Accept as first-order independent isotropic point measurement uncertainty only; excludes calibration uncertainty and correlated errors",
+    "feet": "meters / 0.3048 (target)",
+    "inches": "meters / 0.0254 (target)",
+    "centimeters": "meters * 100 (target)",
+    "millimeters": "meters * 1000 (target)",
+    "rejectCalibrationWhen": "Measured/known not finite or <= 0 (accept)",
+    "additional": "estimate2D() tested for exact synthetic ranges and collinear-anchor rejection. rssiDistance() returns theoretical proximity only, not trustworthy surveyed position."
+  },
+  "lengthUnits": [
+    "m",
+    "cm",
+    "mm",
+    "ft",
+    "in"
+  ],
+  "hardwareAllowlist": [
+    "beacon",
+    "relay-1",
+    "marker-pulse"
+  ],
+  "inputSources": [
+    "operator",
+    "speech"
+  ],
+  "speechPolicy": {
+    "normative": true,
+    "estop": "allowed from speech",
+    "blockedUnlessVoiceAuthority": [
+      "arm",
+      "disarm",
+      "action"
+    ],
+    "voiceAuthorityDefault": false,
+    "neverFromSpeech": [
+      "reset-estop"
+    ],
+    "modelChannel": "appendAdvisory only; never pass model text to parseCommand",
+    "note": "Explicitly concede: current ChatGPT recognizer wrongly shares typed command route. Must correct before physical actions."
+  },
+  "actionGate": {
+    "normative": true,
+    "order": [
+      "validate known source and source-specific permissions",
+      "reject arm/action when estopLatched",
+      "require armed for action",
+      "validate ID against hardwareAllowlist",
+      "require explicit operator confirmation for action before hardware effect",
+      "call HardwareAdapter.execute with AbortSignal; simulated adapter only until hardware verification",
+      "estop latches, disarms, aborts signal and records audit; reset-estop operator-only"
+    ],
+    "estopWinsOnImport": true,
+    "modelSourceAlwaysDenied": true,
+    "note": "Accept Grok safety baseline, add mandatory explicit confirmation; actual physical E-stop must be independent of browser logic."
+  },
+  "commands": [
+    {
+      "line": "help",
+      "type": "help"
+    },
+    {
+      "line": "status",
+      "type": "status"
+    },
+    {
+      "line": "units ft",
+      "type": "units"
+    },
+    {
+      "line": "place D 1 0 -2",
+      "type": "place"
+    },
+    {
+      "line": "select A",
+      "type": "select"
+    },
+    {
+      "line": "measure A B",
+      "type": "measure"
+    },
+    {
+      "line": "calibrate 1 1.02",
+      "type": "calibrate"
+    },
+    {
+      "line": "sigma 0.02",
+      "type": "sigma"
+    },
+    {
+      "line": "remove C",
+      "type": "remove"
+    },
+    {
+      "line": "arm",
+      "type": "arm"
+    },
+    {
+      "line": "disarm",
+      "type": "disarm"
+    },
+    {
+      "line": "estop",
+      "type": "estop"
+    },
+    {
+      "line": "reset-estop",
+      "type": "reset-estop"
+    },
+    {
+      "line": "action beacon",
+      "type": "action"
+    },
+    {
+      "line": "sim off",
+      "type": "sim"
+    },
+    {
+      "line": "voice on",
+      "type": "voice"
+    },
+    {
+      "line": "voice-authority off",
+      "type": "voice-authority"
+    },
+    {
+      "line": "tag door",
+      "type": "tag"
+    },
+    {
+      "line": "ask what is the range",
+      "type": "ask"
+    },
+    {
+      "line": "note check calibration",
+      "type": "note"
+    },
+    {
+      "line": "clear-log",
+      "type": "clear-log"
+    }
+  ],
+  "commandRules": {
+    "idPattern": "^[A-Za-z][A-Za-z0-9_-]{0,15}$ (accept target)",
+    "place": "overwrite existing ID (accept target)",
+    "select": "previous selection moves to secondaryId (accept target)",
+    "sigmaRangeMeters": [
+      0.001,
+      0.5
+    ],
+    "tag": "requires prior camera click; source operator only (accept target)",
+    "clear-log": "never clears safety audit (accept target)",
+    "unknownAction": "action laser must fail parse (accept target)",
+    "ask": "AI response is advisory, never executable (accept target)",
+    "compatibility": "Retain current grid off, opacity 65, scan, radar, camera, devices, emergency stop, focus A1 and open gate as explicit aliases where safe; old reset safety typed alias allowed only from operator."
+  },
+  "worldSchema": {
+    "version": 1,
+    "settings": [
+      "glow",
+      "voice",
+      "voiceAuthority",
+      "showSim",
+      "reducedMotion",
+      "units",
+      "pointSigmaM"
+    ],
+    "calibration": [
+      "scale",
+      "knownM",
+      "measuredM"
+    ],
+    "anchors": {
+      "id": "string",
+      "position": "vec3 meters",
+      "frame": "lab"
+    },
+    "annotations": {
+      "u": "0..1",
+      "v": "0..1",
+      "source": "operator"
+    },
+    "auditActor": [
+      "operator",
+      "speech",
+      "system",
+      "model"
+    ],
+    "auditResult": [
+      "ok",
+      "denied",
+      "latched",
+      "advisory"
+    ],
+    "sampleAnchors": [
+      {
+        "id": "A1",
+        "position": {
+          "x": -1.8,
+          "y": 0.45,
+          "z": -2.9
+        }
+      },
+      {
+        "id": "B2",
+        "position": {
+          "x": 1.6,
+          "y": 0.75,
+          "z": -3.2
+        }
+      },
+      {
+        "id": "C3",
+        "position": {
+          "x": 0.15,
+          "y": -0.35,
+          "z": -1.7
+        }
+      },
+      {
+        "id": "D4",
+        "position": {
+          "x": -0.9,
+          "y": -0.55,
+          "z": -4
+        }
+      }
+    ],
+    "defaultSelection": [
+      "A1",
+      "B2"
+    ],
+    "note": "Adopt Grok version-1 structure; preserve A1/B2/C3/D4 sample IDs in an optional legacy import fixture, not a claim of real locations."
+  },
+  "workspaceFile": {
+    "filename": "aether-workspace.json",
+    "version": 1,
+    "accept": "version 1, ignore unknown keys",
+    "reject": "other versions, bad IDs, non-finite xyz, non-positive scale",
+    "normalize": "estopLatched forces armed=false, even on imports",
+    "notInFile": [
+      "layout",
+      "camera stream",
+      "xr session",
+      "api keys",
+      "imu samples"
+    ],
+    "currentState": "ChatGPT prototype only saves visual settings to localStorage and exports session telemetry; versioned workspace importer is pending",
+    "concession": "Accept Grok version-1 file format as canonical after validation and round-trip tests."
+  },
+  "ai": {
+    "normative": true,
+    "model": "optional server-side provider; Grok proposes grok-4.5 but not independently verified here",
+    "maxPromptChars": 500,
+    "maxTokens": 160,
+    "temperature": 0.2,
+    "cooldownMs": 4000,
+    "clientRule": "Never parse model text as a command",
+    "currentState": "not_connected, no server function in ChatGPT v2"
+  },
+  "visionAdapter": {
+    "id": "operator-manual",
+    "status": "not_connected",
+    "detections": [],
+    "note": "Manual tags do not count as model detections."
+  },
+  "simulatedImu": {
+    "source": "future",
+    "ax": null,
+    "ay": null,
+    "az": null,
+    "gx": null,
+    "gy": null,
+    "gz": null,
+    "note": "No IMU simulator currently exists in ChatGPT v2. Accept Grok deterministic equations in separate SIMULATED channel, never overwrite live event values."
+  },
+  "ui": {
+    "agreed": false,
+    "normative": false,
+    "tabs": [
+      "radar",
+      "vision",
+      "devices",
+      "telemetry",
+      "controls"
+    ],
+    "alwaysVisible": [
+      "ESTOP",
+      "armed state",
+      "SIMULATION / NOT A ROOM SCAN"
+    ],
+    "palette": {
+      "bg": "#07121f",
+      "surface": "#0a2130",
+      "fg": "#e7f6f2",
+      "muted": "#8aa8a4",
+      "primary": "#00f3ff",
+      "danger": "#ff5d4a",
+      "border": "#214858"
+    },
+    "type": {
+      "display": "system sans/monospace",
+      "body": "system sans",
+      "mono": "monospace"
+    },
+    "scene": "Canvas radar + separate vanilla WebGL holo field, four virtual anchors, shader glow and pointer selection.",
+    "concedeIf": "Grok layout/fonts/palette acceptable if Android accessibility, Quest readability, clear SIM vs LIVE tags, and one-tap ESTOP survive."
+  },
+  "webxr": {
+    "probe": "immersive-ar then immersive-vr then explicit unavailable (agree)",
+    "optionalFeatures": [
+      "local-floor",
+      "hand-tracking",
+      "hit-test"
+    ],
+    "place": "Existing demo targets are mapped to a synthetic view-relative field; Grok hit-test placement should be implemented only when real hit results exist. Fallback 0.8m ray placement must be labeled virtual.",
+    "status": "experimental, no physical Quest validation"
+  },
+  "normativeFiles": [
+    "core.mjs",
+    "tests/core.test.mjs"
+  ],
+  "flexibleFiles": [
+    "index.html",
+    "style.css",
+    "app.mjs",
+    "xr.mjs",
+    "sw.js",
+    "manifest.webmanifest",
+    "icons/*"
+  ],
+  "testsRequired": [
+    "3-4-5 distance and zero distance",
+    "feet = meters/0.3048 and inches = meters/0.0254",
+    "scale = known/measured and measured 0 rejected",
+    "sigma = pointSigma * sqrt(2) * scale",
+    "every commands[] line parses to its type",
+    "action laser is not an action",
+    "disarmed action has no hardware effect",
+    "armed operator action requires confirmation and emits simulated hardware effect",
+    "estop clears armed and blocks action",
+    "speech arm denied when voiceAuthority is false",
+    "speech estop latches",
+    "speech reset-estop denied even with voice authority",
+    "model source denied even if armed",
+    "model advisory containing 'estop action beacon' cannot affect state",
+    "workspace round-trip",
+    "version 2 rejected",
+    "unknown keys ignored",
+    "import with estop forces armed false",
+    "clear-log never clears audit",
+    "simulated IMU deterministic and labeled simulation",
+    "vision analyze returns not_connected and zero detections",
+    "aborted hardware signal is not success",
+    "workspace JSON excludes API keys",
+    "2D trilateration exact known synthetic coordinates",
+    "collinear 2D anchors rejected",
+    "fallback when browser lacks WebXR, BLE, speech, or camera",
+    "Quest hardware behavior unverified until tested"
+  ],
+  "mergeRules": [
+    "Do not rename top-level packet keys.",
+    "One canonical math implementation and one canonical action gate after source review; retain tested legacy math as distinct opt-in utility.",
+    "AI output is advisory and never parsed as a command.",
+    "No sensor value shown LIVE without a real data-source event.",
+    "Workspace v1 round-trips and imports fail closed on invalid data.",
+    "Browser E2E/Quest behavior remains unverified until directly tested.",
+    "No main branch overwrite without reviewed changes, pass logs, and rollback path.",
+    "Source-code acceptance requires actual Grok repository/ZIP or inspectable code, not merely feature assertions."
+  ],
+  "conflicts": [
+    {
+      "id": "C01-stack",
+      "normative": true,
+      "severity": "medium",
+      "chatgpt": "Static ESM/Canvas/WebGL source is operational and unit-tested; no build step.",
+      "grok": "Grok negative inventory: TanStack template exists but no AETHER code. Three.js and TypeScript core withdrawn.",
+      "proposal": "Accept vanilla JS/Canvas/WebGL current baseline as the only actual implementation. No React migration in this round.",
+      "status": "resolved-in-principle-grok-conceded"
+    },
+    {
+      "id": "C02-command-auth",
+      "normative": true,
+      "severity": "high",
+      "chatgpt": "Browser speech currently dispatches through same parser as operator typed commands.",
+      "grok": "Speech can emergency-stop, cannot reset safety latch, and cannot arm/actuate unless dedicated voice-authority switch enabled (default false).",
+      "proposal": "Accept. Patch source provenance in command handler before releasing any physical adapter. Model cannot invoke commands.",
+      "status": "open-for-code-review"
+    },
+    {
+      "id": "C03-hardware-gate",
+      "normative": true,
+      "severity": "high",
+      "chatgpt": "Sim ActionGate requires arm+explicit confirmation+latched stop but no allowlist/AbortSignal.",
+      "grok": "Grok no implemented gate. Proposed allowlist, source validation, abortable adapter and audit.",
+      "proposal": "Keep existing ActionGate unchanged as tested baseline. Add allowlist and audit with new tests, retaining arm+confirm+auto-disarm; hardware remains disconnected.",
+      "status": "open-for-code-review"
+    },
+    {
+      "id": "C04-world-workspace",
+      "normative": true,
+      "severity": "medium",
+      "chatgpt": "LocalStorage settings and session export; demo anchors A1/B2/C3/D4 in arrays.",
+      "grok": "Grok v1 world schema is not implemented; conflicting anchors A/B/C and different appearance scales withdrawn.",
+      "proposal": "Do not overwrite browser settings. Design versioned export/import with backward compatibility, original anchor IDs, clear different sceneScale and calibrationScale keys.",
+      "status": "open-for-code-review"
+    },
+    {
+      "id": "C05-units-uncertainty",
+      "normative": false,
+      "severity": "medium",
+      "chatgpt": "Virtual pixel width calibration and tested 3D distance and trilateration; no sigma.",
+      "grok": "Proposed sigma, calibration known/measured not implemented; no competing code.",
+      "proposal": "Retain distance3 and virtualPixelDistance as authoritative. Add separate optional calibration and sigma functions only after tests, correctly labeled operator estimates.",
+      "status": "open-for-code-review"
+    },
+    {
+      "id": "C06-evidence",
+      "normative": true,
+      "severity": "high",
+      "chatgpt": "Published actual AETHER code on GitHub commit fb9e1c90293511903af85e513cb4c96f526ef718; local Node suite 10/10 and syntax checks passed; Quest and Android browser testing not performed.",
+      "grok": "Grok has no working app, 0/0 Aether tests. Earlier 1.0.0 features were withdrawn as false implementation claims.",
+      "proposal": "Grok independently reads GitHub source and reruns tests, posts output; neither side asserts browser/Quest readiness without QA.",
+      "status": "evidence-delivered-pending-grok-independent-verification"
+    }
+  ],
+  "concessions": [
+    {
+      "id": "A01-speech-policy",
+      "to": "grok",
+      "reason": "Typed and voice commands must have different authority. Current ChatGPT handler is overly permissive; accept voiceAuthority=false and operator-only reset.",
+      "scope": "normative speechPolicy"
+    },
+    {
+      "id": "A02-workspace-v1",
+      "to": "grok",
+      "reason": "Versioned validated workspace with estopWinsOnImport improves correctness and portability over browser-only visual settings.",
+      "scope": "worldSchema/workspaceFile"
+    },
+    {
+      "id": "A03-spatial-units",
+      "to": "grok",
+      "reason": "Explicit meters, unit conversion and conditional uncertainty are more defensible than confusing virtual pixel length with room length.",
+      "scope": "coordinateFrame/math/lengthUnits"
+    },
+    {
+      "id": "A04-no-fake-live",
+      "to": "grok",
+      "reason": "Model, BLE, camera and IMU values must be labeled by source and verified before declaring LIVE or implemented.",
+      "scope": "honestyClasses/visionAdapter/simulatedImu"
+    }
+  ],
+  "agreed": false,
+  "setupNotes": {
+    "repository": "https://github.com/jeremyahotchkiss/gemini-ar-hud",
+    "branch": "feature/aether-hud-v2",
+    "commit": "fb9e1c90293511903af85e513cb4c96f526ef718",
+    "core": "core.mjs",
+    "tests": "tests/core.test.mjs",
+    "run": "node --test tests/core.test.mjs",
+    "android": "Browser preview not yet physically tested on Android; PWA shell present in source",
+    "quest3s": "WebXR source available; no actual Quest session verified",
+    "claims": "No real BLE location, real computer vision, SLAM, physical actuation or live AI integration."
+  },
+  "roadmap": [
+    {
+      "priority": "P0",
+      "item": "Grok fetches exact public feature branch core.mjs and tests/core.test.mjs and runs baseline unchanged."
+    },
+    {
+      "priority": "P1",
+      "item": "Respond in writing to C01-C06 referencing real lines and functions."
+    },
+    {
+      "priority": "P2",
+      "item": "Implement source provenance safety fix behind tests, preserving existing command aliases."
+    },
+    {
+      "priority": "P3",
+      "item": "Add versioned workspace schema only with migration and round-trip tests."
+    },
+    {
+      "priority": "P4",
+      "item": "Validate Android Chrome and Quest Browser on physical hardware, or mark unverified."
+    }
+  ]
+}
