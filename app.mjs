@@ -112,6 +112,9 @@ function syncSafetyUI(){
  const indicator=$('safety-state');
  indicator.textContent=gate.stopped?'STOP LATCHED':gate.armed?'SIM ARMED':'SIM DISARMED';
  indicator.classList.toggle('latched',gate.stopped);
+ const topIndicator=$('top-safety-state');
+ topIndicator.textContent=gate.stopped?'STOP':gate.armed?'ARMED':'SAFE';
+ topIndicator.classList.toggle('latched',gate.stopped);
  $('btn-confirm-sim').disabled=gate.stopped||!gate.armed;
  $('toggle-voice-authority').checked=state.voiceAuthority;
 }
@@ -152,6 +155,7 @@ for(const k of ['opacity','glow','scale','range'])$(k).addEventListener('input',
 for(const k of ['grid','particles','labels','audio'])$('toggle-'+k).addEventListener('change',e=>setSettings(k,e.target.checked));
 $('btn-reset-settings').addEventListener('click',()=>{state.settings={...defaults};applySettings();save();toast('Defaults restored');});
 $('btn-stop').addEventListener('click',()=>run('emergency stop','operator'));
+$('btn-estop-quick').addEventListener('click',()=>run('emergency stop','operator'));
 $('btn-reset-safety').addEventListener('click',()=>run('reset safety','operator'));
 $('btn-confirm-sim').addEventListener('click',()=>{
  const result=gate.activate(true,'relay-1',{source:'operator'});

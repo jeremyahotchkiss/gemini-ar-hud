@@ -7,7 +7,7 @@
 - `authorizedCommand(text,{source,voiceAuthority})` denies all model/unknown sources **before** calling the parser, blocks speech reset unconditionally, and allows speech arm/disarm/request only when the session-only voice-authority switch is explicitly enabled. Spoken emergency stop is always allowed.
 - The app routes speech as `source:'speech'`, typed and button actions as `source:'operator'`. The voice-authority switch defaults false on each load, is not persisted, and changing it disarms the gate.
 - `ActionGate` remains simulation-only and preserves its existing `arm()`, `activate(true)`, `stop()`, `reset()` assertions. Added independent source checks, action allowlist (`relay-1`), AbortSignal preflight, a separate safety audit, and stop-dominates-import logic.
-- A visible simulated action confirmation button provides a human-controlled second step. Action requests from the command field alone cannot activate the SIM relay.
+- A visible simulated action confirmation button provides a human-controlled second step. A one-tap SIM emergency-stop button and a compact armed/stop-state indicator remain visible in the top bar on Android-sized layouts. Action requests from the command field alone cannot activate the SIM relay.
 - `clear-log` clears only visible events, not the separate safety audit. JSON export now includes the safety audit, separately labeled.
 - Updated service-worker cache version to avoid stale client files after deployment.
 
